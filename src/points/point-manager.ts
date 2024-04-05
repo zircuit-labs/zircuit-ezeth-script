@@ -15,8 +15,8 @@ function calcPointsFromHolding(
   amountEzEthHolding: bigint,
   holdingPeriod: bigint
 ): bigint {
-  // * ezETH exchangeRate and * 2 for the 2x multiplier
-  return amountEzEthHolding * MISC_CONSTS.EZETH_POINT_RATE / MISC_CONSTS.ONE_E18 * 2n * holdingPeriod / 3600n;
+  // * ezETH exchangeRate
+  return amountEzEthHolding * MISC_CONSTS.EZETH_POINT_RATE / MISC_CONSTS.ONE_E18 * holdingPeriod / 3600n;
 }
 
 export function updatePoints(
