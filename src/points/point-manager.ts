@@ -17,12 +17,12 @@ function calcPointsFromHolding(
   holdingEndTimestamp: bigint,
 ): bigint {
 
-  const cuttoffTimestamp = 1719446400n // 27/06 12:00 AM GMT
+  const cuttoffTimestamp = 1719446400n; // 27/06 12:00 AM GMT
 
-  if(holdingStartTimestamp >= cuttoffTimestamp) return BigInt(0)
-  if(holdingEndTimestamp >= cuttoffTimestamp) holdingEndTimestamp = cuttoffTimestamp
+  if(holdingStartTimestamp >= cuttoffTimestamp) return BigInt(0);
+  if(holdingEndTimestamp >= cuttoffTimestamp) holdingEndTimestamp = cuttoffTimestamp;
 
-  const holdingPeriod = holdingEndTimestamp - holdingStartTimestamp
+  const holdingPeriod = holdingEndTimestamp - holdingStartTimestamp;
   // * ezETH exchangeRate
   return amountEzEthHolding * MISC_CONSTS.EZETH_POINT_RATE / MISC_CONSTS.ONE_E18 * holdingPeriod / 3600n;
 }
