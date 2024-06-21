@@ -32,8 +32,8 @@ export function updatePoints(
   label: POINT_SOURCE,
   account: string,
   amountEzEthHolding: bigint,
-  holdingStartTimestamp:bigint,
-  holdingEndTimestamp:bigint,
+  holdingStartTimestamp: bigint,
+  holdingEndTimestamp: bigint,
   updatedAt: number
 ) {
   const zPoint = calcPointsFromHolding(
