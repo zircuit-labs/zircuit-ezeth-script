@@ -13,8 +13,16 @@ import { EVENT_POINT_INCREASE, POINT_SOURCE, POINT_SOURCE_YT } from "../types.js
  */
 function calcPointsFromHolding(
   amountEzEthHolding: bigint,
-  holdingPeriod: bigint
+  holdingStartTimestamp: bigint,
+  holdingEndTimestamp: bigint,
 ): bigint {
+
+  const cuttoffTimestamp = 1719446400n // 27/06 12:00 AM GMT
+
+  if(holdingStartTimestamp >= cuttoffTimestamp) return BigInt(0)
+  if(holdingEndTimestamp >= cuttoffTimestamp) holdingEndTimestamp = cuttoffTimestamp
+
+  const holdingPeriod = holdingEndTimestamp - holdingStartTimestamp
   // * ezETH exchangeRate
   return amountEzEthHolding * MISC_CONSTS.EZETH_POINT_RATE / MISC_CONSTS.ONE_E18 * holdingPeriod / 3600n;
 }
@@ -24,12 +32,14 @@ export function updatePoints(
   label: POINT_SOURCE,
   account: string,
   amountEzEthHolding: bigint,
-  holdingPeriod: bigint,
+  holdingStartTimestamp:bigint,
+  holdingEndTimestamp:bigint,
   updatedAt: number
 ) {
   const zPoint = calcPointsFromHolding(
     amountEzEthHolding,
-    holdingPeriod
+    holdingStartTimestamp,
+    holdingEndTimestamp,
   );
 
   if (label == POINT_SOURCE_YT) {
