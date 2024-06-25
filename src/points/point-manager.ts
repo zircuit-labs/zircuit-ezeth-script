@@ -36,6 +36,9 @@ export function updatePoints(
   holdingEndTimestamp: bigint,
   updatedAt: number
 ) {
+
+  const holdingPeriod = holdingEndTimestamp - holdingStartTimestamp;
+
   const zPoint = calcPointsFromHolding(
     amountEzEthHolding,
     holdingStartTimestamp,
