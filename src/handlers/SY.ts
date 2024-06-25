@@ -16,7 +16,6 @@ const db = new AsyncNedb({
 
 db.persistence.setAutocompactionInterval(60 * 1000);
 
-
 type AccountSnapshot = {
   _id: string;
   lastUpdatedAt: number;
@@ -46,7 +45,8 @@ async function processAccount(account: string, ctx: ERC20Context) {
       POINT_SOURCE_SY,
       account,
       BigInt(snapshot.lastBalance),
-      BigInt(timestamp - snapshot.lastUpdatedAt),
+      BigInt(snapshot.lastUpdatedAt),
+      BigInt(timestamp),
       timestamp
     );
   }
@@ -63,7 +63,7 @@ async function processAccount(account: string, ctx: ERC20Context) {
     label: POINT_SOURCE_SY,
     account,
     share: newBalance,
-  })
+  });
 
   await db.asyncUpdate({ _id: account }, newSnapshot, { upsert: true });
 }

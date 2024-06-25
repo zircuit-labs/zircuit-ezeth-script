@@ -13,10 +13,14 @@ export const MISC_CONSTS = {
 };
 
 export const PENDLE_POOL_ADDRESSES = {
+  // retrieved from Pendle pool contract readTokens()
   SY: "0x7a493be5c2ce014cd049bf178a1ac0db1b434744",
-  YT: "0x98601e27d41ccff643da9d981dc708cf9ef1f150",
-  LP: "0xd7e0809998693fd87e81d51de1619fd0ee658031",
-  START_BLOCK: 19417104,
+  // retrieved from Pendle pool contract readTokens()
+  YT: "0x87baF4B42c075Db7eb1932A0a49A5465e9a5Ce9f",
+  // using new pool contract
+  LP: "0xEe6BdFAc6767eFEf0879B924feA12a3437d281A2",
+  // the block which the new contract is deployed
+  START_BLOCK: 20158641,
   TREASURY: "0x8270400d528c34e1596ef367eedec99080a1b592",
   EQB_STAKING: "0x787fcbac35c8dbe2ed4c5ef92b0e82b4c63c2371",
   PENPIE_RECEIPT_TOKEN: "0x73f8f505245870fd9070c204fe74835dd9c6ac28",
@@ -38,4 +42,16 @@ export const PENDLE_POOL_ADDRESSES = {
     //     receiptToken: '0xdd9df6a77b4a4a07875f55ce5cb6b933e52cb30a',
     // }
   ],
+};
+
+export const V1_END_TIMESTAMP = 1719446399n; // 2024-06-26 23:59:59 UTC
+
+export const MULTIPLIERS = {
+  campaign: {
+    startTimestamp: 1719187200n, // 2024-06-24 00:00:00 UTC
+    endTimestamp: 1720655999n, // 2024-07-10 23:59:59 UTC
+    multiplier: 200n,
+  },
+  multiplier: 150n,
+  baseFactor: 100n,
 };

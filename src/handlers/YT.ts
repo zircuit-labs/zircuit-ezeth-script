@@ -21,7 +21,6 @@ const db = new AsyncNedb({
 
 db.persistence.setAutocompactionInterval(60 * 1000);
 
-
 type AccountSnapshot = {
   _id: string;
   lastUpdatedAt: number;
@@ -51,8 +50,7 @@ export async function processAllYTAccounts(
   addressesToAdd: string[] = [],
   shouldIncludeDb: boolean = true
 ) {
-
-  if ((await ctx.contract.isExpired())) {
+  if (await ctx.contract.isExpired()) {
     return;
   }
 
@@ -86,7 +84,8 @@ export async function processAllYTAccounts(
         POINT_SOURCE_YT,
         address,
         BigInt(snapshot.lastImpliedHolding),
-        BigInt(timestamp - snapshot.lastUpdatedAt),
+        BigInt(snapshot.lastUpdatedAt),
+        BigInt(timestamp),
         timestamp
       );
     }

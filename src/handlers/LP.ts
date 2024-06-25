@@ -7,12 +7,19 @@ import {
   getPendleMarketContractOnContext,
 } from "../types/eth/pendlemarket.js";
 import { updatePoints } from "../points/point-manager.js";
-import { getUnixTimestamp, isLiquidLockerAddress, isSentioInternalError } from "../helper.js";
+import {
+  getUnixTimestamp,
+  isLiquidLockerAddress,
+  isSentioInternalError,
+} from "../helper.js";
 import { MISC_CONSTS, PENDLE_POOL_ADDRESSES } from "../consts.js";
 import { getERC20ContractOnContext } from "@sentio/sdk/eth/builtin/erc20";
 import { EthContext } from "@sentio/sdk/eth";
 import { getMulticallContractOnContext } from "../types/eth/multicall.js";
-import { readAllUserActiveBalances, readAllUserERC20Balances } from "../multicall.js";
+import {
+  readAllUserActiveBalances,
+  readAllUserERC20Balances,
+} from "../multicall.js";
 import { EVENT_USER_SHARE, POINT_SOURCE_LP } from "../types.js";
 
 /**
@@ -64,13 +71,14 @@ export async function processAllLPAccounts(
   addressesToAdd: string[] = []
 ) {
   // might not need to do this on interval since we are doing it on every swap
-  const allAddresses = (await db.asyncFind<AccountSnapshot>({}))
-    .map((snapshot) => snapshot._id)
+  const allAddresses = (await db.asyncFind<AccountSnapshot>({})).map(
+    (snapshot) => snapshot._id
+  );
 
   for (let address of addressesToAdd) {
-    address = address.toLowerCase()
+    address = address.toLowerCase();
     if (!allAddresses.includes(address) && !isLiquidLockerAddress(address)) {
-      allAddresses.push(address)
+      allAddresses.push(address);
     }
   }
   const marketContract = getPendleMarketContractOnContext(
@@ -133,7 +141,8 @@ async function updateAccount(
       POINT_SOURCE_LP,
       account,
       BigInt(snapshot.lastImpliedHolding),
-      BigInt(timestamp - snapshot.lastUpdatedAt),
+      BigInt(snapshot.lastUpdatedAt),
+      BigInt(timestamp),
       timestamp
     );
   }
