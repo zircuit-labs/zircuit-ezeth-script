@@ -54,4 +54,5 @@ export const MULTIPLIERS = {
   },
   multiplier: 150n,
   baseFactor: 100n,
+  expiry: 1724284800n,
 };
