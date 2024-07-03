@@ -1,4 +1,4 @@
-import { AsyncNedb } from "nedb-async";
+import { AccountSnapshot } from "../schema/schema.ts";
 import {
   PendleMarketContext,
   RedeemRewardsEvent,
@@ -11,11 +11,10 @@ import {
   getUnixTimestamp,
   isLiquidLockerAddress,
   isSentioInternalError,
+  getAllAddresses,
 } from "../helper.js";
-import { MISC_CONSTS, PENDLE_POOL_ADDRESSES } from "../consts.js";
-import { getERC20ContractOnContext } from "@sentio/sdk/eth/builtin/erc20";
+import { PENDLE_POOL_ADDRESSES } from "../consts.js";
 import { EthContext } from "@sentio/sdk/eth";
-import { getMulticallContractOnContext } from "../types/eth/multicall.js";
 import {
   readAllUserActiveBalances,
   readAllUserERC20Balances,
@@ -31,19 +30,6 @@ import { EVENT_USER_SHARE, POINT_SOURCE_LP } from "../types.js";
  *
  * Currently for all liquid lockers, 1 receipt token = 1 LP
  */
-
-const db = new AsyncNedb({
-  filename: "/data/pendle-accounts-lp.db",
-  autoload: true,
-});
-
-db.persistence.setAutocompactionInterval(60 * 1000);
-
-type AccountSnapshot = {
-  _id: string;
-  lastUpdatedAt: number;
-  lastImpliedHolding: string;
-};
 
 export async function handleLPTransfer(
   evt: TransferEvent,
@@ -71,9 +57,7 @@ export async function processAllLPAccounts(
   addressesToAdd: string[] = []
 ) {
   // might not need to do this on interval since we are doing it on every swap
-  const allAddresses = (await db.asyncFind<AccountSnapshot>({})).map(
-    (snapshot) => snapshot._id
-  );
+  const allAddresses = await getAllAddresses(ctx);
 
   for (let address of addressesToAdd) {
     address = address.toLowerCase();
@@ -134,7 +118,10 @@ async function updateAccount(
   impliedSy: bigint,
   timestamp: number
 ) {
-  const snapshot = await db.asyncFindOne<AccountSnapshot>({ _id: account });
+  const accountId = account.toLowerCase() + POINT_SOURCE_LP;
+  const snapshot = await ctx.store.get(AccountSnapshot, accountId);
+  const ts: bigint = BigInt(timestamp).valueOf();
+
   if (snapshot && snapshot.lastUpdatedAt < timestamp) {
     updatePoints(
       ctx,
@@ -146,11 +133,12 @@ async function updateAccount(
       timestamp
     );
   }
-  const newSnapshot = {
-    _id: account,
-    lastUpdatedAt: timestamp,
+  const newSnapshot = new AccountSnapshot({
+    id: accountId,
+    lastUpdatedAt: ts,
     lastImpliedHolding: impliedSy.toString(),
-  };
+    lastBalance: snapshot ? snapshot.lastBalance.toString() : "",
+  });
 
   ctx.eventLogger.emit(EVENT_USER_SHARE, {
     label: POINT_SOURCE_LP,
@@ -158,5 +146,5 @@ async function updateAccount(
     share: impliedSy,
   });
 
-  await db.asyncUpdate({ _id: account }, newSnapshot, { upsert: true });
+  await ctx.store.upsert(newSnapshot);
 }
