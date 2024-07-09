@@ -30,12 +30,12 @@ export const PENDLE_POOL_ADDRESSES = {
     {
       // Penpie
       address: "0x6e799758cee75dae3d84e09d40dc416ecf713652",
-      receiptToken: "0x73f8f505245870fd9070c204fe74835dd9c6ac28",
+      receiptToken: "0x75CB79a5546fAFAE16E968E1E81C7dcb51844674",
     },
     {
       // EQB
       address: "0x64627901dadb46ed7f275fd4fc87d086cff1e6e3",
-      receiptToken: "0x787fcbac35c8dbe2ed4c5ef92b0e82b4c63c2371",
+      receiptToken: "0xD64c8D303CE9d0B6dA9261Be55e408F26C15f0d8",
     },
     // {   // STAKEDAO
     //     address: '0xd8fa8dc5adec503acc5e026a98f32ca5c1fa289a',
