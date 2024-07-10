@@ -162,7 +162,7 @@ export async function processAccounts(
           !addressesToProcess.includes(address) &&
           !isLiquidLockerAddress(address)
         ) {
-          addressesToProcess.push(address.toLowerCase());
+          addressesToProcess.push(address);
         }
       }
     }
@@ -174,7 +174,7 @@ export async function processAccounts(
       !addressesToProcess.includes(address) &&
       !isLiquidLockerAddress(address)
     ) {
-      addressesToProcess.push(address.toLowerCase());
+      addressesToProcess.push(address);
     }
   }
 
