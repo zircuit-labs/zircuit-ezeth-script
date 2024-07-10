@@ -149,7 +149,7 @@ export async function processAccounts(
     });
   }
   
-  const adderssToProcess: string[] = [];
+  const addressesToProcess: string[] = [];
   // cuttoff time
   if (timestamp > MISC_CONSTS.CUTOFF_TIME) {
     timestamp = MISC_CONSTS.CUTOFF_TIME;
@@ -159,10 +159,10 @@ export async function processAccounts(
       for (let address of allAddresses) {
         address = address.toLowerCase();
         if (
-          !adderssToProcess.includes(address) &&
+          !addressesToProcess.includes(address) &&
           !isLiquidLockerAddress(address)
         ) {
-          adderssToProcess.push(address.toLowerCase());
+          addressesToProcess.push(address.toLowerCase());
         }
       }
     }
@@ -171,31 +171,31 @@ export async function processAccounts(
   for (let address of addressesToAdd) {
     address = address.toLowerCase();
     if (
-      !adderssToProcess.includes(address) &&
+      !addressesToProcess.includes(address) &&
       !isLiquidLockerAddress(address)
     ) {
-      adderssToProcess.push(address.toLowerCase());
+      addressesToProcess.push(address.toLowerCase());
     }
   }
 
   const [usersShares, usersSharesPenPie, usersSharesEQB] = await Promise.all([
-    readAllUserActiveBalances(ctx, adderssToProcess),
+    readAllUserActiveBalances(ctx, addressesToProcess),
     readAllUserERC20Balances(
       ctx,
-      adderssToProcess,
+      addressesToProcess,
       PENDLE_POOL_ADDRESSES.LIQUID_LOCKERS[0].receiptToken
     ),
     readAllUserERC20Balances(
       ctx,
-      adderssToProcess,
+      addressesToProcess,
       PENDLE_POOL_ADDRESSES.LIQUID_LOCKERS[1].receiptToken
     ),
   ]);
 
   const updateAccountPromises = [];
 
-  for (let i = 0; i < adderssToProcess.length; i++) {
-    const accountId = adderssToProcess[i] + POINT_SOURCE_LP;
+  for (let i = 0; i < addressesToProcess.length; i++) {
+    const accountId = addressesToProcess[i] + POINT_SOURCE_LP;
     let accountSnapshot = await ctx.store.get(AccountSnapshotLP, accountId);
 
     if (!accountSnapshot)
@@ -237,7 +237,7 @@ export async function processAccounts(
       increasePoint(
         ctx,
         POINT_SOURCE_LP,
-        adderssToProcess[i],
+        addressesToProcess[i],
         accountSnapshot,
         accruedPoints,
         timeDiff,
