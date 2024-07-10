@@ -167,6 +167,7 @@ export async function processAccounts(
 
     accountSnapshot.lastShare = usersShares[i];
     accountSnapshot.lastUpdatedAt = timestamp;
+    accountSnapshot.lastCumulativeRate = rateSnapshot.cummulativeRate;
 
     const accruedPoints = 
       cumulativeRateDiff * MISC_CONSTS.EZETH_POINT_RATE /
