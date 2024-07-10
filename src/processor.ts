@@ -12,7 +12,6 @@ GLOBAL_CONFIG.execution = {
   sequential: true,
 };
 
-
 ERC20Processor.bind({
   address: PENDLE_POOL_ADDRESSES.SY,
   startBlock: PENDLE_POOL_ADDRESSES.START_BLOCK,
@@ -21,7 +20,6 @@ ERC20Processor.bind({
 }).onEventTransfer(async(evt, ctx) => {
   await handleSYTransfer(evt, ctx);
 })
-
 
 PendleYieldTokenProcessor.bind({
   address: PENDLE_POOL_ADDRESSES.YT,
@@ -49,37 +47,3 @@ PendleMarketProcessor.bind({
 }).onEventSwap(async(evt, ctx) => {
   await handleMarketSwap(evt, ctx);
 });
-
-EQBBaseRewardProcessor.bind({
-  address: PENDLE_POOL_ADDRESSES.EQB_STAKING,
-  startBlock: PENDLE_POOL_ADDRESSES.START_BLOCK,
-  name: "Equilibria Base Reward",
-  network: CONFIG.BLOCKCHAIN
-}).onEventStaked(async(evt, ctx) => {
-  await processAllLPAccounts(ctx, [evt.args._user.toLowerCase()]);
-}).onEventWithdrawn(async(evt, ctx) => {
-  await processAllLPAccounts(ctx, [evt.args._user.toLowerCase()]);
-})
-
-ERC20Processor.bind({
-  address: PENDLE_POOL_ADDRESSES.PENPIE_RECEIPT_TOKEN,
-  startBlock: PENDLE_POOL_ADDRESSES.START_BLOCK,
-  name: "Pendle Pie Receipt Token",
-  network: CONFIG.BLOCKCHAIN
-}).onEventTransfer(async(evt, ctx) => {
-  await processAllLPAccounts(ctx, [
-    evt.args.from.toLowerCase(),
-    evt.args.to.toLowerCase(),
-  ]);
-});
-
-// ERC20Processor.bind({
-//   address: PENDLE_POOL_ADDRESSES.STAKEDAO_RECEIPT_TOKEN,
-//   startBlock: PENDLE_POOL_ADDRESSES.START_BLOCK,
-//   name: "Stakedao Receipt Token",
-// }).onEventTransfer(async(evt, ctx) => {
-//   await processAllLPAccounts(ctx, [
-//     evt.args.from.toLowerCase(),
-//     evt.args.to.toLowerCase(),
-//   ]);
-// });

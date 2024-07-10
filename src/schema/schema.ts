@@ -7,11 +7,6 @@ import { Entity, Required, One, Many, Column, ListColumn } from '@sentio/sdk/sto
 import { BigDecimal } from '@sentio/bigdecimal'
 import { DatabaseSchema } from '@sentio/sdk'
 
-
-
-
-
-
 @Entity("AccountSnapshot")
 export class AccountSnapshot  {
 
@@ -29,19 +24,11 @@ export class AccountSnapshot  {
 
 	@Required
 	@Column("String")
-	lastBalance: String
+	lastShare: String
 
 	@Required
 	@Column("String")
 	lastCumulativeRate: String
-
-	@Required
-	@Column("String")
-	lastCummulativeRatePenPie: String
-
-	@Required
-	@Column("String")
-	lastCummulativeRateEQB: String
 
   constructor(data: Partial<AccountSnapshot>) {}
 
@@ -62,35 +49,22 @@ export class RateSnapshot  {
 	@Column("String")
 	cummulativeRate: String
 
-	@Required
-	@Column("String")
-	cummulativeRatePenPie: String
-
-	@Required
-	@Column("String")
-	cummulativeRateEQB: String
-
   constructor(data: Partial<RateSnapshot>) {}
 
 }
-
 
 const source = `type AccountSnapshot @entity {
   id: ID!
   lastUpdatedAt: BigInt!
   lastImpliedHolding: String!
-  lastBalance: String!
+  lastShare	: String!
   lastCumulativeRate: String!
-  lastCummulativeRatePenPie: String!
-  lastCummulativeRateEQB: String!
 }
 
 type RateSnapshot @entity {
   id: ID!
   lastUpdatedAt: BigInt!
   cummulativeRate: String!
-  cummulativeRatePenPie: String!
-  cummulativeRateEQB: String!
 }`
 DatabaseSchema.register({
   source,
