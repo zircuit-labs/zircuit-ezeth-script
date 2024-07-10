@@ -75,7 +75,10 @@ export async function handleMarketSwap(_: SwapEvent, ctx: PendleMarketContext) {
  */
 export async function updateLPtoSYRates(ctx: EthContext) {
   let rateSnapshot = await ctx.store.get(RateSnapshotLP, "RATES:ID");
-  const timestamp = BigInt(getUnixTimestamp(ctx.timestamp));
+  let timestamp = BigInt(getUnixTimestamp(ctx.timestamp));
+
+  // cuttoff time
+  if(timestamp > MISC_CONSTS.CUTOFF_TIME) timestamp = MISC_CONSTS.CUTOFF_TIME;
 
   if (!rateSnapshot) {
     rateSnapshot = new RateSnapshotLP({
@@ -96,7 +99,6 @@ export async function updateLPtoSYRates(ctx: EthContext) {
   ]);
 
   // the points multilier needs to be handled here
-  // TODO: implement cutoff here
   
   const cummulativeRate = rateSnapshot.cummulativeRate +
     (timestamp - rateSnapshot?.lastUpdatedAt) * state.totalSy * 2n  /
@@ -113,7 +115,10 @@ export async function processAccounts(
   ctx: EthContext,
   addressesToAdd: string[] = []
 ) {
-  const timestamp = BigInt(getUnixTimestamp(ctx.timestamp));
+  let timestamp = BigInt(getUnixTimestamp(ctx.timestamp));
+  // cuttoff time
+  if(timestamp > MISC_CONSTS.CUTOFF_TIME) timestamp = MISC_CONSTS.CUTOFF_TIME;
+
   let rateSnapshot = await ctx.store.get(RateSnapshotLP, "RATES:ID");
 
   if (!rateSnapshot) {

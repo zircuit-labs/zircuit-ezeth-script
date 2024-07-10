@@ -32,14 +32,13 @@ GLOBAL_CONFIG.execution = {
 // }).onEventRedeemInterest(async(evt, ctx) => {
 //   await handleYTRedeemInterest(evt, ctx);
 // }).onTimeInterval(async(_, ctx) => {
-//   // for v1 pools we should trigger this once at the expiry time
-//   // for now its every 24hrs
 //   await processAllYTAccounts(ctx);
 // }, MISC_CONSTS.ONE_DAY_IN_MINUTE);
 
 PendleMarketProcessor.bind({
   address: PENDLE_POOL_ADDRESSES.LP,
   startBlock: PENDLE_POOL_ADDRESSES.START_BLOCK,
+  endBlock: PENDLE_POOL_ADDRESSES.END_BLOCK,
   name: "Pendle Pool LP",
   network: CONFIG.BLOCKCHAIN
 }).onEventTransfer(async(evt, ctx) => {
@@ -48,4 +47,6 @@ PendleMarketProcessor.bind({
   await handleMarketRedeemReward(evt, ctx);
 }).onEventSwap(async(evt, ctx) => {
   await handleMarketSwap(evt, ctx);
-});
+}).onTimeInterval(async(_, ctx) => {
+  await processAllLPAccounts(ctx);
+}, MISC_CONSTS.ONE_DAY_IN_MINUTE);
