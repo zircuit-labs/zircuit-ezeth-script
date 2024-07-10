@@ -119,6 +119,23 @@ export async function updateLPtoSYRates(ctx: EthContext) {
   ).toString();
 }
 
+export async function processAffectedAccounts(
+  ctx: EthContext,
+  addressesToAdd: string[] = []
+) {
+  const adderssToProcess: string[] = [];
+
+  for (let address of addressesToAdd) {
+    address = address.toLowerCase();
+    if (
+      !adderssToProcess.includes(address) &&
+      !isLiquidLockerAddress(address)
+    ) {
+      adderssToProcess.push(address);
+    }
+  }
+}
+
 export async function processAllLPAccounts(
   ctx: EthContext,
   addressesToAdd: string[] = []
