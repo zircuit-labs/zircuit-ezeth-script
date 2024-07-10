@@ -120,7 +120,7 @@ export async function updateLPtoSYRates(ctx: EthContext) {
     }
   }
 
-  // the points multilier needs to be handled here
+  // the points multiplier needs to be handled here
 
   const cummulativeRate =
     rateSnapshot.cummulativeRate +
