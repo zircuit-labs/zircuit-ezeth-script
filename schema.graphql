@@ -3,4 +3,15 @@ type AccountSnapshot @entity {
   lastUpdatedAt: BigInt!
   lastImpliedHolding: String!
   lastBalance: String!
+  lastCumulativeRate: String!
+  lastCummulativeRatePenPie: String!
+  lastCummulativeRateEQB: String!
+}
+
+type RateSnapshot @entity {
+  id: ID!
+  lastUpdatedAt: BigInt!
+  cummulativeRate: String!
+  cummulativeRatePenPie: String!
+  cummulativeRateEQB: String!
 }

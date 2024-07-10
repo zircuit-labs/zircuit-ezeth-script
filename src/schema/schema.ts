@@ -31,7 +31,46 @@ export class AccountSnapshot  {
 	@Column("String")
 	lastBalance: String
 
+	@Required
+	@Column("String")
+	lastCumulativeRate: String
+
+	@Required
+	@Column("String")
+	lastCummulativeRatePenPie: String
+
+	@Required
+	@Column("String")
+	lastCummulativeRateEQB: String
+
   constructor(data: Partial<AccountSnapshot>) {}
+
+}
+
+@Entity("RateSnapshot")
+export class RateSnapshot  {
+
+	@Required
+	@Column("ID")
+	id: ID
+
+	@Required
+	@Column("BigInt")
+	lastUpdatedAt: BigInt
+
+	@Required
+	@Column("String")
+	cummulativeRate: String
+
+	@Required
+	@Column("String")
+	cummulativeRatePenPie: String
+
+	@Required
+	@Column("String")
+	cummulativeRateEQB: String
+
+  constructor(data: Partial<RateSnapshot>) {}
 
 }
 
@@ -41,11 +80,22 @@ const source = `type AccountSnapshot @entity {
   lastUpdatedAt: BigInt!
   lastImpliedHolding: String!
   lastBalance: String!
+  lastCumulativeRate: String!
+  lastCummulativeRatePenPie: String!
+  lastCummulativeRateEQB: String!
 }
-`
+
+type RateSnapshot @entity {
+  id: ID!
+  lastUpdatedAt: BigInt!
+  cummulativeRate: String!
+  cummulativeRatePenPie: String!
+  cummulativeRateEQB: String!
+}`
 DatabaseSchema.register({
   source,
   entities: {
-    "AccountSnapshot": AccountSnapshot
+    "AccountSnapshot": AccountSnapshot,
+		"RateSnapshot": RateSnapshot
   }
 })

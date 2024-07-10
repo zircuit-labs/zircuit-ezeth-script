@@ -1,4 +1,4 @@
-import { AccountSnapshot } from "../schema/schema.ts";
+import { AccountSnapshot, RateSnapshot } from "../schema/schema.ts";
 import {
   PendleMarketContext,
   RedeemRewardsEvent,
@@ -35,6 +35,7 @@ export async function handleLPTransfer(
   evt: TransferEvent,
   ctx: PendleMarketContext
 ) {
+  await updateLPtoSYRates(ctx);
   await processAllLPAccounts(ctx, [
     evt.args.from.toLowerCase(),
     evt.args.to.toLowerCase(),
@@ -50,6 +51,72 @@ export async function handleMarketRedeemReward(
 
 export async function handleMarketSwap(_: SwapEvent, ctx: PendleMarketContext) {
   await processAllLPAccounts(ctx);
+}
+
+/**
+ * @dev This function calculates the cumulative rate to convert LP into equivilent SY
+ * This function calculates three different rates:
+ * 1. the rate for liquid lockers - penpie
+ * 2. the rate for liquid lockers - EQB
+ * 3. the rate for the Zircuit points (time)
+ * and update the three different rates + timestamp to data store
+ */
+export async function updateLPtoSYRates(ctx: EthContext) {
+  let rateSnapshot = await ctx.store.get(RateSnapshot, "rates");
+  const timestamp = getUnixTimestamp(ctx.timestamp);
+
+  if (!rateSnapshot) {
+    rateSnapshot = new RateSnapshot({
+      id: "rates",
+      lastUpdatedAt: BigInt(timestamp),
+      cummulativeRate: "0",
+      cummulativeRatePenPie: "0",
+      cummulativeRateEQB: "0",
+    });
+  }
+
+  const marketContract = getPendleMarketContractOnContext(
+    ctx,
+    PENDLE_POOL_ADDRESSES.LP
+  );
+
+  const [totalShare, state] = await Promise.all([
+    marketContract.totalActiveSupply(),
+    marketContract.readState(marketContract.address),
+  ]);
+
+  for (const liquidLocker of PENDLE_POOL_ADDRESSES.LIQUID_LOCKERS) {
+    const liquidLockerBal = await marketContract.balanceOf(
+      liquidLocker.address
+    );
+    if (liquidLockerBal == 0n) continue;
+
+    const liquidLockerActiveBal = await marketContract.activeBalance(
+      liquidLocker.address
+    );
+
+    if (liquidLocker.name === "PenPie") {
+      rateSnapshot.cummulativeRatePenPie = (
+        BigInt(rateSnapshot?.cummulativeRatePenPie) +
+        ((BigInt(timestamp) - rateSnapshot?.lastUpdatedAt) *
+          liquidLockerActiveBal) /
+          liquidLockerBal
+      ).toString();
+    } else if (liquidLocker.name === "EQB") {
+      rateSnapshot.cummulativeRateEQB = (
+        BigInt(rateSnapshot?.cummulativeRateEQB) +
+        ((BigInt(timestamp) - rateSnapshot?.lastUpdatedAt) *
+          liquidLockerActiveBal) /
+          liquidLockerBal
+      ).toString();
+    }
+  }
+
+  rateSnapshot.cummulativeRate = (
+    BigInt(rateSnapshot.cummulativeRate) +
+    ((BigInt(timestamp) - rateSnapshot?.lastUpdatedAt) * state.totalSy) /
+      totalShare
+  ).toString();
 }
 
 export async function processAllLPAccounts(
@@ -91,6 +158,7 @@ export async function processAllLPAccounts(
         allAddresses,
         liquidLocker.receiptToken
       );
+
       for (let i = 0; i < allAddresses.length; i++) {
         const userBal = allUserReceiptTokenBalances[i];
         const userBoostedHolding =
@@ -109,7 +177,9 @@ export async function processAllLPAccounts(
   for (let i = 0; i < allAddresses.length; i++) {
     const account = allAddresses[i];
     const impliedSy = (allUserShares[i] * state.totalSy) / totalShare;
-    updateAccountPromises.push(updateAccount(ctx, account, impliedSy, timestamp));
+    updateAccountPromises.push(
+      updateAccount(ctx, account, impliedSy, timestamp)
+    );
   }
   await Promise.all(updateAccountPromises);
 }
