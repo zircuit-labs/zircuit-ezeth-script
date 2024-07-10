@@ -165,6 +165,7 @@ export async function processAccounts(
           addressesToProcess.push(address);
         }
       }
+      await ctx.store.upsert(rateSnapshot);
     }
   }
 
