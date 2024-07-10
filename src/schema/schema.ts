@@ -7,6 +7,53 @@ import { Entity, Required, One, Many, Column, ListColumn } from '@sentio/sdk/sto
 import { BigDecimal } from '@sentio/bigdecimal'
 import { DatabaseSchema } from '@sentio/sdk'
 
+
+
+
+
+
+@Entity("AccountSnapshotLP")
+export class AccountSnapshotLP  {
+
+	@Required
+	@Column("ID")
+	id: ID
+
+	@Required
+	@Column("BigInt")
+	lastUpdatedAt: BigInt
+
+	@Required
+	@Column("BigInt")
+	lastShare: BigInt
+
+	@Required
+	@Column("BigInt")
+	lastCumulativeRate: BigInt
+
+  constructor(data: Partial<AccountSnapshotLP>) {}
+
+}
+
+@Entity("RateSnapshotLP")
+export class RateSnapshotLP  {
+
+	@Required
+	@Column("ID")
+	id: ID
+
+	@Required
+	@Column("BigInt")
+	lastUpdatedAt: BigInt
+
+	@Required
+	@Column("BigInt")
+	cummulativeRate: BigInt
+
+  constructor(data: Partial<RateSnapshotLP>) {}
+
+}
+
 @Entity("AccountSnapshot")
 export class AccountSnapshot  {
 
@@ -24,11 +71,19 @@ export class AccountSnapshot  {
 
 	@Required
 	@Column("String")
-	lastShare: String
+	lastBalance: String
 
 	@Required
 	@Column("String")
 	lastCumulativeRate: String
+
+	@Required
+	@Column("String")
+	lastCummulativeRatePenPie: String
+
+	@Required
+	@Column("String")
+	lastCummulativeRateEQB: String
 
   constructor(data: Partial<AccountSnapshot>) {}
 
@@ -49,27 +104,55 @@ export class RateSnapshot  {
 	@Column("String")
 	cummulativeRate: String
 
+	@Required
+	@Column("String")
+	cummulativeRatePenPie: String
+
+	@Required
+	@Column("String")
+	cummulativeRateEQB: String
+
   constructor(data: Partial<RateSnapshot>) {}
 
 }
 
-const source = `type AccountSnapshot @entity {
+
+const source = `type AccountSnapshotLP @entity {
+  id: ID!
+  lastUpdatedAt: BigInt!
+  lastShare: BigInt!
+  lastCumulativeRate: BigInt!
+}
+
+type RateSnapshotLP @entity {
+  id: ID!
+  lastUpdatedAt: BigInt!
+  cummulativeRate: BigInt!
+}
+
+type AccountSnapshot @entity {
   id: ID!
   lastUpdatedAt: BigInt!
   lastImpliedHolding: String!
-  lastShare	: String!
+  lastBalance: String!
   lastCumulativeRate: String!
+  lastCummulativeRatePenPie: String!
+  lastCummulativeRateEQB: String!
 }
 
 type RateSnapshot @entity {
   id: ID!
   lastUpdatedAt: BigInt!
   cummulativeRate: String!
+  cummulativeRatePenPie: String!
+  cummulativeRateEQB: String!
 }`
 DatabaseSchema.register({
   source,
   entities: {
-    "AccountSnapshot": AccountSnapshot,
+    "AccountSnapshotLP": AccountSnapshotLP,
+		"RateSnapshotLP": RateSnapshotLP,
+		"AccountSnapshot": AccountSnapshot,
 		"RateSnapshot": RateSnapshot
   }
 })

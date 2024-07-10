@@ -1,3 +1,16 @@
+type AccountSnapshotLP @entity {
+  id: ID!
+  lastUpdatedAt: BigInt!
+  lastShare: BigInt!
+  lastCumulativeRate: BigInt!
+}
+
+type RateSnapshotLP @entity {
+  id: ID!
+  lastUpdatedAt: BigInt!
+  cummulativeRate: BigInt!
+}
+
 type AccountSnapshot @entity {
   id: ID!
   lastUpdatedAt: BigInt!

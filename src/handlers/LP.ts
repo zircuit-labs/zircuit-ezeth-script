@@ -1,5 +1,5 @@
 
-import { AccountSnapshot, RateSnapshot } from "../schema/schema.ts";
+import { AccountSnapshotLP, RateSnapshotLP } from "../schema/schema.ts";
 import { updatePoints } from "../points/point-manager.js";
 import { MISC_CONSTS, PENDLE_POOL_ADDRESSES } from "../consts.js";
 import { EthContext } from "@sentio/sdk/eth";
@@ -48,7 +48,7 @@ export async function handleLPTransfer(
   ctx: PendleMarketContext
 ) {
   await updateLPtoSYRates(ctx);
-  await processAffectedAccounts(ctx, [
+  await processAccounts(ctx, [
     evt.args.from,
     evt.args.to,
   ]);
@@ -74,14 +74,14 @@ export async function handleMarketSwap(_: SwapEvent, ctx: PendleMarketContext) {
  * TODO: and update the three different rates + timestamp to data store
  */
 export async function updateLPtoSYRates(ctx: EthContext) {
-  let rateSnapshot = await ctx.store.get(RateSnapshot, "rates");
-  const timestamp = getUnixTimestamp(ctx.timestamp);
+  let rateSnapshot = await ctx.store.get(RateSnapshotLP, "RATES:ID");
+  const timestamp = BigInt(getUnixTimestamp(ctx.timestamp));
 
   if (!rateSnapshot) {
-    rateSnapshot = new RateSnapshot({
-      id: "rates",
+    rateSnapshot = new RateSnapshotLP({
+      id: "RATES:ID",
       lastUpdatedAt: BigInt(timestamp),
-      cummulativeRate: "0",
+      cummulativeRate: BigInt(0),
     });
   }
 
@@ -98,24 +98,33 @@ export async function updateLPtoSYRates(ctx: EthContext) {
   // the points multilier needs to be handled here
   // TODO: implement cutoff here
   
-  const cummulativeRate = BigInt(rateSnapshot.cummulativeRate) +
-    ((BigInt(timestamp) - rateSnapshot?.lastUpdatedAt) * state.totalSy * 2n  /
-    totalShare)
+  const cummulativeRate = rateSnapshot.cummulativeRate +
+    (timestamp - rateSnapshot?.lastUpdatedAt) * state.totalSy * 2n  /
+    totalShare
 
-  rateSnapshot.cummulativeRate = cummulativeRate.toString();// TODO: can we use BigInt instead?
+  rateSnapshot.cummulativeRate = cummulativeRate;
 
-  rateSnapshot.lastUpdatedAt = BigInt(timestamp); 
+  rateSnapshot.lastUpdatedAt = timestamp; 
 
   await ctx.store.upsert(rateSnapshot);
 }
 
-export async function processAffectedAccounts(
+export async function processAccounts(
   ctx: EthContext,
   addressesToAdd: string[] = []
 ) {
-  let rateSnapshot = await ctx.store.get(RateSnapshot, "rates");
+  const timestamp = BigInt(getUnixTimestamp(ctx.timestamp));
+  let rateSnapshot = await ctx.store.get(RateSnapshotLP, "RATES:ID");
+
+  if (!rateSnapshot) {
+    rateSnapshot = new RateSnapshotLP({
+      id: "RATES:ID",
+      lastUpdatedAt: timestamp,
+      cummulativeRate: BigInt(0),
+    });
+  }
+
   const adderssToProcess: string[] = [];
-  const timestamp = getUnixTimestamp(ctx.timestamp);
 
   for (let address of addressesToAdd) {
     address = address.toLowerCase();
@@ -134,44 +143,40 @@ export async function processAffectedAccounts(
   for (let i = 0; i < adderssToProcess.length; i++) {
 
     const accountId = adderssToProcess[i] + POINT_SOURCE_LP;
-    let accountSnapshot = await ctx.store.get(AccountSnapshot, accountId);
+    let accountSnapshot = await ctx.store.get(AccountSnapshotLP, accountId);
 
     if (!accountSnapshot)
-      accountSnapshot = new AccountSnapshot({
-        id: account,
+      accountSnapshot = new AccountSnapshotLP({
+        id: accountId,
         lastUpdatedAt: BigInt(0),
-        lastImpliedHolding: "0",
-        lastShare: "0",
-        lastCumulativeRate: "0",
+        lastShare: BigInt(0),
+        lastCumulativeRate: BigInt(0),
       });
 
     // timestamp can be rateSnapshot.lastUpdatedAt since update rates has to always be called first 
     const cumulativeRateDiff = 
-      BigInt(accountSnapshot.lastShare) * 
-      (BigInt(rateSnapshot.cummulativeRate) - BigInt(accountSnapshot.lastCumulativeRate))
+      accountSnapshot.lastShare * 
+      (rateSnapshot.cummulativeRate - accountSnapshot.lastCumulativeRate)
 
-    const timeDiff = BigInt(timestamp) - BigInt(accountSnapshot.lastUpdatedAt);
+    const timeDiff = timestamp - accountSnapshot.lastUpdatedAt;
 
-    accountSnapshot.lastShare = usersShares[i].toString();
-    accountSnapshot.lastUpdatedAt = timestamp.toString();
+    accountSnapshot.lastShare = usersShares[i];
+    accountSnapshot.lastUpdatedAt = timestamp;
 
     const accruedPoints = 
       cumulativeRateDiff * MISC_CONSTS.EZETH_POINT_RATE /
       ( MISC_CONSTS.ONE_E18 * 3600n );
 
     updateAccountPromises.push(
-      updateAccount(ctx, accountId, , cumulativeRateDiff, timeDiff, timestamp)
-    );
-
-    increasePoint(
-      ctx,
-      POINT_SOURCE_LP,
-      account,
-      accounttId,
-      accountSnapshot,
-      accruedPoints,
-      timeDiff,
-      timestamp
+      increasePoint(
+        ctx,
+        POINT_SOURCE_LP,
+        adderssToProcess[i],
+        accountSnapshot,
+        accruedPoints,
+        timeDiff,
+        BigInt(timestamp)
+      )
     )
   }
   await Promise.all(updateAccountPromises);  
@@ -181,10 +186,10 @@ async function increasePoint(
   ctx: EthContext,
   label: POINT_SOURCE,
   account: string,
-  accountSnapshot: AccountSnapshot,
-  accruedPoints: biging,
-  timeDiff: Number,
-  updatedAt: Number,
+  accountSnapshot: AccountSnapshotLP,
+  accruedPoints: bigint,
+  timeDiff: bigint,
+  updatedAt: bigint,
 ) {
 
   ctx.eventLogger.emit(EVENT_USER_SHARE, {
@@ -204,4 +209,12 @@ async function increasePoint(
   });
 
   await ctx.store.upsert(accountSnapshot); 
+}
+
+export async function processAllLPAccounts(
+  ctx: EthContext,
+) {
+  await updateLPtoSYRates(ctx);
+  const allAddresses = await getAllAddresses(ctx);
+  await processAccounts(ctx, allAddresses)
 }

@@ -32,6 +32,8 @@ PendleYieldTokenProcessor.bind({
 }).onEventRedeemInterest(async(evt, ctx) => {
   await handleYTRedeemInterest(evt, ctx);
 }).onTimeInterval(async(_, ctx) => {
+  // for v1 pools we should trigger this once at the expiry time
+  // for now its every 24hrs
   await processAllYTAccounts(ctx);
 }, MISC_CONSTS.ONE_DAY_IN_MINUTE);
 
