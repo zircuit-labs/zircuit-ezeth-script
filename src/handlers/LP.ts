@@ -1,4 +1,3 @@
-
 import { AccountSnapshotLP, RateSnapshotLP } from "../schema/schema.ts";
 import { updatePoints } from "../points/point-manager.js";
 import { MISC_CONSTS, PENDLE_POOL_ADDRESSES } from "../consts.js";
@@ -25,13 +24,15 @@ import {
   readAllUserERC20Balances,
 } from "../multicall.js";
 
-import { 
-  EVENT_USER_SHARE, 
+import {
+  EVENT_USER_SHARE,
   POINT_SOURCE_LP,
   EVENT_POINT_INCREASE,
   POINT_SOURCE,
   POINT_SOURCE_YT,
 } from "../types.js";
+
+const STORAGE_KEY = `RATES:${POINT_SOURCE_LP}`;
 
 /**
  * @dev 1 LP = (X PT + Y SY) where X and Y are defined by market conditions
@@ -48,10 +49,7 @@ export async function handleLPTransfer(
   ctx: PendleMarketContext
 ) {
   await updateLPtoSYRates(ctx);
-  await processAccounts(ctx, [
-    evt.args.from,
-    evt.args.to,
-  ]);
+  await processAccounts(ctx, [evt.args.from, evt.args.to]);
 }
 
 export async function handleMarketRedeemReward(
@@ -69,20 +67,20 @@ export async function handleMarketSwap(_: SwapEvent, ctx: PendleMarketContext) {
  * @dev This function calculates the cumulative rate to convert LP into equivilent SY
  * This function calculates three different rates:
  * 1. the rate for liquid lockers - penpie
- * 2. TODO: the rate for liquid lockers - EQB 
+ * 2. TODO: the rate for liquid lockers - EQB
  * 3. TODO: the rate for the Zircuit points (time)
- * TODO: and update the three different rates + timestamp to data store
+ * and update the three different rates + timestamp to data store
  */
 export async function updateLPtoSYRates(ctx: EthContext) {
-  let rateSnapshot = await ctx.store.get(RateSnapshotLP, "RATES:ID");
+  let rateSnapshot = await ctx.store.get(RateSnapshotLP, STORAGE_KEY);
   let timestamp = BigInt(getUnixTimestamp(ctx.timestamp));
 
   // cuttoff time
-  if(timestamp > MISC_CONSTS.CUTOFF_TIME) timestamp = MISC_CONSTS.CUTOFF_TIME;
+  if (timestamp > MISC_CONSTS.CUTOFF_TIME) timestamp = MISC_CONSTS.CUTOFF_TIME;
 
   if (!rateSnapshot) {
     rateSnapshot = new RateSnapshotLP({
-      id: "RATES:ID",
+      id: STORAGE_KEY,
       lastUpdatedAt: BigInt(timestamp),
       cummulativeRate: BigInt(0),
     });
@@ -98,15 +96,44 @@ export async function updateLPtoSYRates(ctx: EthContext) {
     marketContract.readState(marketContract.address),
   ]);
 
+  for (const liquidLocker of PENDLE_POOL_ADDRESSES.LIQUID_LOCKERS) {
+    const liquidLockerBal = await marketContract.balanceOf(
+      liquidLocker.address
+    );
+    if (liquidLockerBal == 0n) continue;
+
+    const liquidLockerActiveBal = await marketContract.activeBalance(
+      liquidLocker.address
+    );
+
+    if (liquidLocker.name === "PenPie") {
+      rateSnapshot.cummulativeRatePenPie =
+        BigInt(rateSnapshot?.cummulativeRatePenPie) +
+        ((((BigInt(timestamp) - rateSnapshot?.lastUpdatedAt) *
+          liquidLockerActiveBal) /
+          liquidLockerBal) *
+          state.totalSy) /
+          totalShare;
+    } else if (liquidLocker.name === "EQB") {
+      rateSnapshot.cummulativeRateEQB =
+        BigInt(rateSnapshot?.cummulativeRateEQB) +
+        ((((BigInt(timestamp) - rateSnapshot?.lastUpdatedAt) *
+          liquidLockerActiveBal) /
+          liquidLockerBal) *
+          state.totalSy) /
+          totalShare;
+    }
+  }
+
   // the points multilier needs to be handled here
-  
-  const cummulativeRate = rateSnapshot.cummulativeRate +
-    (timestamp - rateSnapshot?.lastUpdatedAt) * state.totalSy * 2n  /
-    totalShare
+
+  const cummulativeRate =
+    rateSnapshot.cummulativeRate +
+    ((timestamp - rateSnapshot?.lastUpdatedAt) * state.totalSy * 2n) /
+      totalShare;
 
   rateSnapshot.cummulativeRate = cummulativeRate;
-
-  rateSnapshot.lastUpdatedAt = timestamp; 
+  rateSnapshot.lastUpdatedAt = timestamp;
 
   await ctx.store.upsert(rateSnapshot);
 }
@@ -117,13 +144,13 @@ export async function processAccounts(
 ) {
   let timestamp = BigInt(getUnixTimestamp(ctx.timestamp));
   // cuttoff time
-  if(timestamp > MISC_CONSTS.CUTOFF_TIME) timestamp = MISC_CONSTS.CUTOFF_TIME;
+  if (timestamp > MISC_CONSTS.CUTOFF_TIME) timestamp = MISC_CONSTS.CUTOFF_TIME;
 
-  let rateSnapshot = await ctx.store.get(RateSnapshotLP, "RATES:ID");
+  let rateSnapshot = await ctx.store.get(RateSnapshotLP, STORAGE_KEY);
 
   if (!rateSnapshot) {
     rateSnapshot = new RateSnapshotLP({
-      id: "RATES:ID",
+      id: STORAGE_KEY,
       lastUpdatedAt: timestamp,
       cummulativeRate: BigInt(0),
     });
@@ -146,7 +173,6 @@ export async function processAccounts(
   const updateAccountPromises = [];
 
   for (let i = 0; i < adderssToProcess.length; i++) {
-
     const accountId = adderssToProcess[i] + POINT_SOURCE_LP;
     let accountSnapshot = await ctx.store.get(AccountSnapshotLP, accountId);
 
@@ -158,20 +184,28 @@ export async function processAccounts(
         lastCumulativeRate: BigInt(0),
       });
 
-    // timestamp can be rateSnapshot.lastUpdatedAt since update rates has to always be called first 
-    const cumulativeRateDiff = 
-      accountSnapshot.lastShare * 
-      (rateSnapshot.cummulativeRate - accountSnapshot.lastCumulativeRate)
+    // timestamp can be rateSnapshot.lastUpdatedAt since update rates has to always be called first
+    const cumulativeRateDiff =
+      accountSnapshot.lastShare *
+      (rateSnapshot.cummulativeRate -
+        accountSnapshot.lastCumulativeRate +
+        (rateSnapshot.cummulativeRateEQB -
+          accountSnapshot.lastCummulativeRateEQB) +
+        (rateSnapshot.cummulativeRatePenPie -
+          accountSnapshot.lastCummulativeRatePenPie));
 
     const timeDiff = timestamp - accountSnapshot.lastUpdatedAt;
 
     accountSnapshot.lastShare = usersShares[i];
     accountSnapshot.lastUpdatedAt = timestamp;
     accountSnapshot.lastCumulativeRate = rateSnapshot.cummulativeRate;
+    accountSnapshot.lastCummulativeRateEQB = rateSnapshot.cummulativeRateEQB;
+    accountSnapshot.lastCummulativeRatePenPie =
+      rateSnapshot.cummulativeRatePenPie;
 
-    const accruedPoints = 
-      cumulativeRateDiff * MISC_CONSTS.EZETH_POINT_RATE /
-      ( MISC_CONSTS.ONE_E18 * 3600n );
+    const accruedPoints =
+      (cumulativeRateDiff * MISC_CONSTS.EZETH_POINT_RATE) /
+      (MISC_CONSTS.ONE_E18 * 3600n);
 
     updateAccountPromises.push(
       increasePoint(
@@ -183,9 +217,9 @@ export async function processAccounts(
         timeDiff,
         BigInt(timestamp)
       )
-    )
+    );
   }
-  await Promise.all(updateAccountPromises);  
+  await Promise.all(updateAccountPromises);
 }
 
 async function increasePoint(
@@ -195,9 +229,8 @@ async function increasePoint(
   accountSnapshot: AccountSnapshotLP,
   accruedPoints: bigint,
   timeDiff: bigint,
-  updatedAt: bigint,
+  updatedAt: bigint
 ) {
-
   ctx.eventLogger.emit(EVENT_USER_SHARE, {
     label,
     account: account,
@@ -214,13 +247,11 @@ async function increasePoint(
     severity: LogLevel.INFO,
   });
 
-  await ctx.store.upsert(accountSnapshot); 
+  await ctx.store.upsert(accountSnapshot);
 }
 
-export async function processAllLPAccounts(
-  ctx: EthContext,
-) {
+export async function processAllLPAccounts(ctx: EthContext) {
   await updateLPtoSYRates(ctx);
   const allAddresses = await getAllAddresses(ctx);
-  await processAccounts(ctx, allAddresses)
+  await processAccounts(ctx, allAddresses);
 }

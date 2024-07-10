@@ -3,12 +3,16 @@ type AccountSnapshotLP @entity {
   lastUpdatedAt: BigInt!
   lastShare: BigInt!
   lastCumulativeRate: BigInt!
+  lastCummulativeRatePenPie: BigInt!
+  lastCummulativeRateEQB: BigInt!
 }
 
 type RateSnapshotLP @entity {
   id: ID!
   lastUpdatedAt: BigInt!
   cummulativeRate: BigInt!
+  cummulativeRatePenPie: BigInt!
+  cummulativeRateEQB: BigInt!
 }
 
 type AccountSnapshot @entity {
@@ -19,12 +23,4 @@ type AccountSnapshot @entity {
   lastCumulativeRate: String!
   lastCummulativeRatePenPie: String!
   lastCummulativeRateEQB: String!
-}
-
-type RateSnapshot @entity {
-  id: ID!
-  lastUpdatedAt: BigInt!
-  cummulativeRate: String!
-  cummulativeRatePenPie: String!
-  cummulativeRateEQB: String!
 }

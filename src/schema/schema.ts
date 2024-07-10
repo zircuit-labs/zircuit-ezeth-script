@@ -31,6 +31,14 @@ export class AccountSnapshotLP  {
 	@Column("BigInt")
 	lastCumulativeRate: BigInt
 
+	@Required
+	@Column("BigInt")
+	lastCummulativeRatePenPie: BigInt
+
+	@Required
+	@Column("BigInt")
+	lastCummulativeRateEQB: BigInt
+
   constructor(data: Partial<AccountSnapshotLP>) {}
 
 }
@@ -49,6 +57,14 @@ export class RateSnapshotLP  {
 	@Required
 	@Column("BigInt")
 	cummulativeRate: BigInt
+
+	@Required
+	@Column("BigInt")
+	cummulativeRatePenPie: BigInt
+
+	@Required
+	@Column("BigInt")
+	cummulativeRateEQB: BigInt
 
   constructor(data: Partial<RateSnapshotLP>) {}
 
@@ -89,45 +105,22 @@ export class AccountSnapshot  {
 
 }
 
-@Entity("RateSnapshot")
-export class RateSnapshot  {
-
-	@Required
-	@Column("ID")
-	id: ID
-
-	@Required
-	@Column("BigInt")
-	lastUpdatedAt: BigInt
-
-	@Required
-	@Column("String")
-	cummulativeRate: String
-
-	@Required
-	@Column("String")
-	cummulativeRatePenPie: String
-
-	@Required
-	@Column("String")
-	cummulativeRateEQB: String
-
-  constructor(data: Partial<RateSnapshot>) {}
-
-}
-
 
 const source = `type AccountSnapshotLP @entity {
   id: ID!
   lastUpdatedAt: BigInt!
   lastShare: BigInt!
   lastCumulativeRate: BigInt!
+  lastCummulativeRatePenPie: BigInt!
+  lastCummulativeRateEQB: BigInt!
 }
 
 type RateSnapshotLP @entity {
   id: ID!
   lastUpdatedAt: BigInt!
   cummulativeRate: BigInt!
+  cummulativeRatePenPie: BigInt!
+  cummulativeRateEQB: BigInt!
 }
 
 type AccountSnapshot @entity {
@@ -139,20 +132,12 @@ type AccountSnapshot @entity {
   lastCummulativeRatePenPie: String!
   lastCummulativeRateEQB: String!
 }
-
-type RateSnapshot @entity {
-  id: ID!
-  lastUpdatedAt: BigInt!
-  cummulativeRate: String!
-  cummulativeRatePenPie: String!
-  cummulativeRateEQB: String!
-}`
+`
 DatabaseSchema.register({
   source,
   entities: {
     "AccountSnapshotLP": AccountSnapshotLP,
 		"RateSnapshotLP": RateSnapshotLP,
-		"AccountSnapshot": AccountSnapshot,
-		"RateSnapshot": RateSnapshot
+		"AccountSnapshot": AccountSnapshot
   }
 })
