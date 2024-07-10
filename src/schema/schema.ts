@@ -37,7 +37,15 @@ export class AccountSnapshotLP  {
 
 	@Required
 	@Column("BigInt")
+	lastSharePenPie: BigInt
+
+	@Required
+	@Column("BigInt")
 	lastCummulativeRateEQB: BigInt
+
+	@Required
+	@Column("BigInt")
+	lastShareEQB: BigInt
 
   constructor(data: Partial<AccountSnapshotLP>) {}
 
@@ -112,7 +120,9 @@ const source = `type AccountSnapshotLP @entity {
   lastShare: BigInt!
   lastCumulativeRate: BigInt!
   lastCummulativeRatePenPie: BigInt!
+  lastSharePenPie: BigInt!
   lastCummulativeRateEQB: BigInt!
+  lastShareEQB: BigInt!
 }
 
 type RateSnapshotLP @entity {
@@ -132,6 +142,7 @@ type AccountSnapshot @entity {
   lastCummulativeRatePenPie: String!
   lastCummulativeRateEQB: String!
 }
+
 `
 DatabaseSchema.register({
   source,

@@ -107,21 +107,19 @@ export async function updateLPtoSYRates(ctx: EthContext) {
     );
 
     if (liquidLocker.name === "PenPie") {
-      rateSnapshot.cummulativeRatePenPie =
-        BigInt(rateSnapshot?.cummulativeRatePenPie) +
+      rateSnapshot.cummulativeRatePenPie +=
         ((((BigInt(timestamp) - rateSnapshot?.lastUpdatedAt) *
           liquidLockerActiveBal) /
           liquidLockerBal) *
           state.totalSy) /
-          totalShare;
+        totalShare;
     } else if (liquidLocker.name === "EQB") {
-      rateSnapshot.cummulativeRateEQB =
-        BigInt(rateSnapshot?.cummulativeRateEQB) +
+      rateSnapshot.cummulativeRateEQB +=
         ((((BigInt(timestamp) - rateSnapshot?.lastUpdatedAt) *
           liquidLockerActiveBal) /
           liquidLockerBal) *
           state.totalSy) /
-          totalShare;
+        totalShare;
     }
   }
 
@@ -168,7 +166,19 @@ export async function processAccounts(
     }
   }
 
-  const usersShares = await readAllUserActiveBalances(ctx, adderssToProcess);
+  const [usersShares, usersSharesPenPie, usersSharesEQB] = await Promise.all([
+    readAllUserActiveBalances(ctx, adderssToProcess),
+    readAllUserERC20Balances(
+      ctx,
+      adderssToProcess,
+      PENDLE_POOL_ADDRESSES.LIQUID_LOCKERS[0].receiptToken
+    ),
+    readAllUserERC20Balances(
+      ctx,
+      adderssToProcess,
+      PENDLE_POOL_ADDRESSES.LIQUID_LOCKERS[1].receiptToken
+    ),
+  ]);
 
   const updateAccountPromises = [];
 
@@ -182,6 +192,10 @@ export async function processAccounts(
         lastUpdatedAt: BigInt(0),
         lastShare: BigInt(0),
         lastCumulativeRate: BigInt(0),
+        lastSharePenPie: BigInt(0),
+        lastCummulativeRatePenPie: BigInt(0),
+        lastShareEQB: BigInt(0),
+        lastCummulativeRateEQB: BigInt(0),
       });
 
     // timestamp can be rateSnapshot.lastUpdatedAt since update rates has to always be called first
@@ -189,10 +203,12 @@ export async function processAccounts(
       accountSnapshot.lastShare *
       (rateSnapshot.cummulativeRate -
         accountSnapshot.lastCumulativeRate +
-        (rateSnapshot.cummulativeRateEQB -
-          accountSnapshot.lastCummulativeRateEQB) +
-        (rateSnapshot.cummulativeRatePenPie -
-          accountSnapshot.lastCummulativeRatePenPie));
+        accountSnapshot.lastSharePenPie *
+          (rateSnapshot.cummulativeRatePenPie -
+            accountSnapshot.lastCummulativeRatePenPie) +
+        accountSnapshot.lastShareEQB *
+          (rateSnapshot.cummulativeRateEQB -
+            accountSnapshot.lastCummulativeRateEQB));
 
     const timeDiff = timestamp - accountSnapshot.lastUpdatedAt;
 
@@ -202,6 +218,8 @@ export async function processAccounts(
     accountSnapshot.lastCummulativeRateEQB = rateSnapshot.cummulativeRateEQB;
     accountSnapshot.lastCummulativeRatePenPie =
       rateSnapshot.cummulativeRatePenPie;
+    accountSnapshot.lastSharePenPie = usersSharesPenPie[i];
+    accountSnapshot.lastShareEQB = usersSharesEQB[i];
 
     const accruedPoints =
       (cumulativeRateDiff * MISC_CONSTS.EZETH_POINT_RATE) /

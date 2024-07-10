@@ -4,7 +4,9 @@ type AccountSnapshotLP @entity {
   lastShare: BigInt!
   lastCumulativeRate: BigInt!
   lastCummulativeRatePenPie: BigInt!
+  lastSharePenPie: BigInt!
   lastCummulativeRateEQB: BigInt!
+  lastShareEQB: BigInt!
 }
 
 type RateSnapshotLP @entity {
@@ -24,3 +26,4 @@ type AccountSnapshot @entity {
   lastCummulativeRatePenPie: String!
   lastCummulativeRateEQB: String!
 }
+
