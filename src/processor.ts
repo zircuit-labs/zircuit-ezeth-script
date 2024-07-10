@@ -12,30 +12,30 @@ GLOBAL_CONFIG.execution = {
   sequential: true,
 };
 
-ERC20Processor.bind({
-  address: PENDLE_POOL_ADDRESSES.SY,
-  startBlock: PENDLE_POOL_ADDRESSES.START_BLOCK,
-  name: "Pendle Pool SY",
-  network: CONFIG.BLOCKCHAIN
-}).onEventTransfer(async(evt, ctx) => {
-  await handleSYTransfer(evt, ctx);
-})
+// ERC20Processor.bind({
+//   address: PENDLE_POOL_ADDRESSES.SY,
+//   startBlock: PENDLE_POOL_ADDRESSES.START_BLOCK,
+//   name: "Pendle Pool SY",
+//   network: CONFIG.BLOCKCHAIN
+// }).onEventTransfer(async(evt, ctx) => {
+//   await handleSYTransfer(evt, ctx);
+// })
 
-PendleYieldTokenProcessor.bind({
-  address: PENDLE_POOL_ADDRESSES.YT,
-  startBlock: PENDLE_POOL_ADDRESSES.START_BLOCK,
-  name: "Pendle Pool YT",
-  network: CONFIG.BLOCKCHAIN
+// PendleYieldTokenProcessor.bind({
+//   address: PENDLE_POOL_ADDRESSES.YT,
+//   startBlock: PENDLE_POOL_ADDRESSES.START_BLOCK,
+//   name: "Pendle Pool YT",
+//   network: CONFIG.BLOCKCHAIN
 
-}).onEventTransfer(async(evt, ctx) => {
-  await handleYTTransfer(evt, ctx);
-}).onEventRedeemInterest(async(evt, ctx) => {
-  await handleYTRedeemInterest(evt, ctx);
-}).onTimeInterval(async(_, ctx) => {
-  // for v1 pools we should trigger this once at the expiry time
-  // for now its every 24hrs
-  await processAllYTAccounts(ctx);
-}, MISC_CONSTS.ONE_DAY_IN_MINUTE);
+// }).onEventTransfer(async(evt, ctx) => {
+//   await handleYTTransfer(evt, ctx);
+// }).onEventRedeemInterest(async(evt, ctx) => {
+//   await handleYTRedeemInterest(evt, ctx);
+// }).onTimeInterval(async(_, ctx) => {
+//   // for v1 pools we should trigger this once at the expiry time
+//   // for now its every 24hrs
+//   await processAllYTAccounts(ctx);
+// }, MISC_CONSTS.ONE_DAY_IN_MINUTE);
 
 PendleMarketProcessor.bind({
   address: PENDLE_POOL_ADDRESSES.LP,
