@@ -15,6 +15,7 @@ type RateSnapshotLP @entity {
   cummulativeRate: BigInt!
   cummulativeRatePenPie: BigInt!
   cummulativeRateEQB: BigInt!
+  ended: Boolean!
 }
 
 type AccountSnapshot @entity {

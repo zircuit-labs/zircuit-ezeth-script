@@ -81,7 +81,7 @@ export async function updateLPtoSYRates(ctx: EthContext) {
   if (!rateSnapshot) {
     rateSnapshot = new RateSnapshotLP({
       id: STORAGE_KEY,
-      lastUpdatedAt: BigInt(timestamp),
+      lastUpdatedAt: timestamp,
       cummulativeRate: BigInt(0),
     });
   }
@@ -108,18 +108,15 @@ export async function updateLPtoSYRates(ctx: EthContext) {
 
     if (liquidLocker.name === "PenPie") {
       rateSnapshot.cummulativeRatePenPie +=
-        ((((BigInt(timestamp) - rateSnapshot?.lastUpdatedAt) *
-          liquidLockerActiveBal) /
-          liquidLockerBal) *
-          state.totalSy) /
-        totalShare;
+        (timestamp - rateSnapshot.lastUpdatedAt) * 
+        (liquidLockerActiveBal * state.totalSy) / 
+        (liquidLockerBal * totalShare );
+
     } else if (liquidLocker.name === "EQB") {
       rateSnapshot.cummulativeRateEQB +=
-        ((((BigInt(timestamp) - rateSnapshot?.lastUpdatedAt) *
-          liquidLockerActiveBal) /
-          liquidLockerBal) *
-          state.totalSy) /
-        totalShare;
+        (timestamp - rateSnapshot.lastUpdatedAt) * 
+        (liquidLockerActiveBal * state.totalSy) / 
+        (liquidLockerBal * totalShare );
     }
   }
 
@@ -140,21 +137,36 @@ export async function processAccounts(
   ctx: EthContext,
   addressesToAdd: string[] = []
 ) {
-  let timestamp = BigInt(getUnixTimestamp(ctx.timestamp));
-  // cuttoff time
-  if (timestamp > MISC_CONSTS.CUTOFF_TIME) timestamp = MISC_CONSTS.CUTOFF_TIME;
-
   let rateSnapshot = await ctx.store.get(RateSnapshotLP, STORAGE_KEY);
+  let timestamp = BigInt(getUnixTimestamp(ctx.timestamp));
 
   if (!rateSnapshot) {
     rateSnapshot = new RateSnapshotLP({
       id: STORAGE_KEY,
       lastUpdatedAt: timestamp,
       cummulativeRate: BigInt(0),
+      ended: false,
     });
   }
-
+  
   const adderssToProcess: string[] = [];
+  // cuttoff time
+  if (timestamp > MISC_CONSTS.CUTOFF_TIME) {
+    timestamp = MISC_CONSTS.CUTOFF_TIME;
+    if(!rateSnapshot.ended) {
+      rateSnapshot.ended = true;
+      const allAddresses = await getAllAddresses(ctx);
+      for (let address of allAddresses) {
+        address = address.toLowerCase();
+        if (
+          !adderssToProcess.includes(address) &&
+          !isLiquidLockerAddress(address)
+        ) {
+          adderssToProcess.push(address.toLowerCase());
+        }
+      }
+    }
+  }
 
   for (let address of addressesToAdd) {
     address = address.toLowerCase();
@@ -201,14 +213,11 @@ export async function processAccounts(
     // timestamp can be rateSnapshot.lastUpdatedAt since update rates has to always be called first
     const cumulativeRateDiff =
       accountSnapshot.lastShare *
-      (rateSnapshot.cummulativeRate -
-        accountSnapshot.lastCumulativeRate +
-        accountSnapshot.lastSharePenPie *
-          (rateSnapshot.cummulativeRatePenPie -
-            accountSnapshot.lastCummulativeRatePenPie) +
-        accountSnapshot.lastShareEQB *
-          (rateSnapshot.cummulativeRateEQB -
-            accountSnapshot.lastCummulativeRateEQB));
+        (rateSnapshot.cummulativeRate - accountSnapshot.lastCumulativeRate) +
+      accountSnapshot.lastSharePenPie *
+        (rateSnapshot.cummulativeRatePenPie - accountSnapshot.lastCummulativeRatePenPie) +
+      accountSnapshot.lastShareEQB *
+        (rateSnapshot.cummulativeRateEQB - accountSnapshot.lastCummulativeRateEQB);
 
     const timeDiff = timestamp - accountSnapshot.lastUpdatedAt;
 
@@ -216,8 +225,7 @@ export async function processAccounts(
     accountSnapshot.lastUpdatedAt = timestamp;
     accountSnapshot.lastCumulativeRate = rateSnapshot.cummulativeRate;
     accountSnapshot.lastCummulativeRateEQB = rateSnapshot.cummulativeRateEQB;
-    accountSnapshot.lastCummulativeRatePenPie =
-      rateSnapshot.cummulativeRatePenPie;
+    accountSnapshot.lastCummulativeRatePenPie = rateSnapshot.cummulativeRatePenPie;
     accountSnapshot.lastSharePenPie = usersSharesPenPie[i];
     accountSnapshot.lastShareEQB = usersSharesEQB[i];
 
@@ -264,12 +272,5 @@ async function increasePoint(
     updatedAt,
     severity: LogLevel.INFO,
   });
-
   await ctx.store.upsert(accountSnapshot);
-}
-
-export async function processAllLPAccounts(ctx: EthContext) {
-  await updateLPtoSYRates(ctx);
-  const allAddresses = await getAllAddresses(ctx);
-  await processAccounts(ctx, allAddresses);
 }

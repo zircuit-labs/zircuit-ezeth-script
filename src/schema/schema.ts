@@ -74,6 +74,10 @@ export class RateSnapshotLP  {
 	@Column("BigInt")
 	cummulativeRateEQB: BigInt
 
+	@Required
+	@Column("Boolean")
+	ended: Boolean
+
   constructor(data: Partial<RateSnapshotLP>) {}
 
 }
@@ -131,6 +135,7 @@ type RateSnapshotLP @entity {
   cummulativeRate: BigInt!
   cummulativeRatePenPie: BigInt!
   cummulativeRateEQB: BigInt!
+  ended: Boolean!
 }
 
 type AccountSnapshot @entity {

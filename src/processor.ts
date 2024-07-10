@@ -4,7 +4,7 @@ import { handleSYTransfer } from './handlers/SY.js'
 import { PendleYieldTokenProcessor } from './types/eth/pendleyieldtoken.js'
 import { handleYTRedeemInterest, handleYTTransfer, processAllYTAccounts } from './handlers/YT.js'
 import { PendleMarketProcessor } from './types/eth/pendlemarket.js'
-import { handleLPTransfer, handleMarketRedeemReward, handleMarketSwap, processAllLPAccounts } from './handlers/LP.js'
+import { handleLPTransfer, handleMarketRedeemReward, handleMarketSwap } from './handlers/LP.js'
 import { EQBBaseRewardProcessor } from './types/eth/eqbbasereward.js'
 import { GLOBAL_CONFIG } from "@sentio/runtime";
 
@@ -47,6 +47,4 @@ PendleMarketProcessor.bind({
   await handleMarketRedeemReward(evt, ctx);
 }).onEventSwap(async(evt, ctx) => {
   await handleMarketSwap(evt, ctx);
-}).onTimeInterval(async(_, ctx) => {
-  await processAllLPAccounts(ctx);
-}, MISC_CONSTS.ONE_DAY_IN_MINUTE);
+})
