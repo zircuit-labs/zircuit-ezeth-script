@@ -96,6 +96,8 @@ export async function updateLPtoSYRates(ctx: EthContext) {
   ]);
 
   // the points multilier needs to be handled here
+  // TODO: implement cutoff here
+  
   const cummulativeRate = BigInt(rateSnapshot.cummulativeRate) +
     ((BigInt(timestamp) - rateSnapshot?.lastUpdatedAt) * state.totalSy * 2n  /
     totalShare)
