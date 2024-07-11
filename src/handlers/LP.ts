@@ -1,8 +1,14 @@
-import { AccountSnapshotLP, RateSnapshotLP } from "../schema/schema.ts";
+
 import { updatePoints } from "../points/point-manager.js";
 import { MISC_CONSTS, PENDLE_POOL_ADDRESSES } from "../consts.js";
 import { EthContext } from "@sentio/sdk/eth";
 import { LogLevel } from "@sentio/sdk";
+
+import { 
+  AccountSnapshotLP,
+  RateSnapshotLP,
+  RerunSnapshot,
+} from "../schema/schema.ts";
 
 import {
   PendleMarketContext,
@@ -16,7 +22,6 @@ import {
   getUnixTimestamp,
   isLiquidLockerAddress,
   isSentioInternalError,
-  getAllAddresses,
   getAllLPAddresses,
 } from "../helper.js";
 
@@ -33,7 +38,8 @@ import {
   POINT_SOURCE_YT,
 } from "../types.js";
 
-const STORAGE_KEY = `RATES:${POINT_SOURCE_LP}`;
+const RATE_KEY = `RATES:${POINT_SOURCE_LP}`;
+const RERUN_KEY = `RERUN:${POINT_SOURCE_LP}`;
 
 /**
  * @dev This function calculates the cumulative rate to convert LP into equivilent SY
@@ -44,7 +50,7 @@ const STORAGE_KEY = `RATES:${POINT_SOURCE_LP}`;
  * and update the three different rates + timestamp to data store
  */
 export async function updateLPtoSYRates(ctx: EthContext) {
-  let rateSnapshot = await ctx.store.get(RateSnapshotLP, STORAGE_KEY);
+  let rateSnapshot = await ctx.store.get(RateSnapshotLP, RATE_KEY);
   let timestamp = BigInt(getUnixTimestamp(ctx.timestamp));
 
   // cuttoff time
@@ -52,12 +58,11 @@ export async function updateLPtoSYRates(ctx: EthContext) {
 
   if (!rateSnapshot) {
     rateSnapshot = new RateSnapshotLP({
-      id: STORAGE_KEY,
+      id: RATE_KEY,
       lastUpdatedAt: timestamp,
       cummulativeRate: BigInt(0),
       cummulativeRatePenPie: BigInt(0),
       cummulativeRateEQB: BigInt(0),
-      ended: false,
     });
   }
 
@@ -84,13 +89,17 @@ export async function updateLPtoSYRates(ctx: EthContext) {
     if (liquidLocker.name === "PenPie") {
       rateSnapshot.cummulativeRatePenPie +=
         (timestamp - rateSnapshot.lastUpdatedAt) * 
-        (liquidLockerActiveBal * state.totalSy * 2n * MISC_CONSTS.EZETH_POINT_RATE) / 
+        (liquidLockerActiveBal * state.totalSy * 
+          MISC_CONSTS.PENDLE_DEFAULT_MULTIPLIER * 
+          MISC_CONSTS.EZETH_POINT_RATE) / 
         (liquidLockerBal * totalShare );
 
     } else if (liquidLocker.name === "EQB") {
       rateSnapshot.cummulativeRateEQB +=
         (timestamp - rateSnapshot.lastUpdatedAt) * 
-        (liquidLockerActiveBal * state.totalSy * 2n * MISC_CONSTS.EZETH_POINT_RATE) / 
+        (liquidLockerActiveBal * state.totalSy * 
+          MISC_CONSTS.PENDLE_DEFAULT_MULTIPLIER * 
+          MISC_CONSTS.EZETH_POINT_RATE) / 
         (liquidLockerBal * totalShare );
     }
   }
@@ -99,8 +108,11 @@ export async function updateLPtoSYRates(ctx: EthContext) {
 
   const cummulativeRate =
     rateSnapshot.cummulativeRate +
-    ((timestamp - rateSnapshot?.lastUpdatedAt) * state.totalSy * 2n * MISC_CONSTS.EZETH_POINT_RATE) /
-      totalShare;
+    ((timestamp - rateSnapshot?.lastUpdatedAt) * 
+      state.totalSy *
+      MISC_CONSTS.PENDLE_DEFAULT_MULTIPLIER *
+      MISC_CONSTS.EZETH_POINT_RATE) /
+    totalShare;
 
   rateSnapshot.cummulativeRate = cummulativeRate;
   rateSnapshot.lastUpdatedAt = timestamp;
@@ -112,17 +124,26 @@ export async function processLPAccounts(
   ctx: EthContext,
   addressesToAdd: string[] = []
 ) {
-  let rateSnapshot = await ctx.store.get(RateSnapshotLP, STORAGE_KEY);
   let timestamp = BigInt(getUnixTimestamp(ctx.timestamp));
+  let rerunSnapshot = await ctx.store.get(RerunSnapshot, RERUN_KEY);
+  let rateSnapshot = await ctx.store.get(RateSnapshotLP, RATE_KEY);
+
+  if(!rerunSnapshot)
+    rerunSnapshot = new RerunSnapshot({
+      id: RERUN_KEY,
+      ended: false,
+      updatedAt: timestamp,
+    })
+
+  if(rerunSnapshot.ended) return;
 
   if (!rateSnapshot) {
     rateSnapshot = new RateSnapshotLP({
-      id: STORAGE_KEY,
+      id: RATE_KEY,
       lastUpdatedAt: timestamp,
       cummulativeRate: BigInt(0),
       cummulativeRatePenPie: BigInt(0),
       cummulativeRateEQB: BigInt(0),
-      ended: false,
     });
   }
   
@@ -131,12 +152,11 @@ export async function processLPAccounts(
   // cuttoff time
   if (timestamp > MISC_CONSTS.CUTOFF_TIME) {
     timestamp = MISC_CONSTS.CUTOFF_TIME;
-    if(!rateSnapshot.ended) {
-      rateSnapshot.ended = true;
+    if(!rerunSnapshot.ended) {
+      rerunSnapshot.ended = true;
       const allAddresses = await getAllLPAddresses(ctx);
       for (let address of allAddresses)
         addressesSet.add(address);
-      await ctx.store.upsert(rateSnapshot);
     }
   }
 
@@ -231,6 +251,8 @@ export async function processLPAccounts(
     );
   }
   await Promise.all(updateAccountPromises);
+  rerunSnapshot.updatedAt = timestamp;
+  await ctx.store.upsert(rerunSnapshot);
 }
 
 async function increasePoint(

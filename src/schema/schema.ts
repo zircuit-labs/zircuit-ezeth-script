@@ -74,16 +74,12 @@ export class RateSnapshotLP  {
 	@Column("BigInt")
 	cummulativeRateEQB: BigInt
 
-	@Required
-	@Column("Boolean")
-	ended: Boolean
-
   constructor(data: Partial<RateSnapshotLP>) {}
 
 }
 
-@Entity("AccountSnapshot")
-export class AccountSnapshot  {
+@Entity("AccountSnapshotSY")
+export class AccountSnapshotSY  {
 
 	@Required
 	@Column("ID")
@@ -94,26 +90,48 @@ export class AccountSnapshot  {
 	lastUpdatedAt: BigInt
 
 	@Required
-	@Column("String")
-	lastImpliedHolding: String
+	@Column("BigInt")
+	lastBalance: BigInt
+
+  constructor(data: Partial<AccountSnapshotSY>) {}
+
+}
+
+@Entity("AccountSnapshotYT")
+export class AccountSnapshotYT  {
 
 	@Required
-	@Column("String")
-	lastBalance: String
+	@Column("ID")
+	id: ID
 
 	@Required
-	@Column("String")
-	lastCumulativeRate: String
+	@Column("BigInt")
+	lastUpdatedAt: BigInt
 
 	@Required
-	@Column("String")
-	lastCummulativeRatePenPie: String
+	@Column("BigInt")
+	lastImpliedHolding: BigInt
+
+  constructor(data: Partial<AccountSnapshotYT>) {}
+
+}
+
+@Entity("RerunSnapshot")
+export class RerunSnapshot  {
 
 	@Required
-	@Column("String")
-	lastCummulativeRateEQB: String
+	@Column("ID")
+	id: ID
 
-  constructor(data: Partial<AccountSnapshot>) {}
+	@Required
+	@Column("BigInt")
+	updatedAt: BigInt
+
+	@Required
+	@Column("Boolean")
+	ended: Boolean
+
+  constructor(data: Partial<RerunSnapshot>) {}
 
 }
 
@@ -135,17 +153,24 @@ type RateSnapshotLP @entity {
   cummulativeRate: BigInt!
   cummulativeRatePenPie: BigInt!
   cummulativeRateEQB: BigInt!
-  ended: Boolean!
 }
 
-type AccountSnapshot @entity {
+type AccountSnapshotSY @entity {
   id: ID!
   lastUpdatedAt: BigInt!
-  lastImpliedHolding: String!
-  lastBalance: String!
-  lastCumulativeRate: String!
-  lastCummulativeRatePenPie: String!
-  lastCummulativeRateEQB: String!
+  lastBalance: BigInt!
+}
+
+type AccountSnapshotYT @entity {
+  id: ID!
+  lastUpdatedAt: BigInt!
+  lastImpliedHolding: BigInt!
+}
+
+type RerunSnapshot @entity {
+  id: ID!
+  updatedAt: BigInt!
+  ended: Boolean!
 }
 
 `
@@ -154,6 +179,8 @@ DatabaseSchema.register({
   entities: {
     "AccountSnapshotLP": AccountSnapshotLP,
 		"RateSnapshotLP": RateSnapshotLP,
-		"AccountSnapshot": AccountSnapshot
+		"AccountSnapshotSY": AccountSnapshotSY,
+		"AccountSnapshotYT": AccountSnapshotYT,
+		"RerunSnapshot": RerunSnapshot
   }
 })

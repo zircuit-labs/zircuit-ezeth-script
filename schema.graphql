@@ -15,16 +15,23 @@ type RateSnapshotLP @entity {
   cummulativeRate: BigInt!
   cummulativeRatePenPie: BigInt!
   cummulativeRateEQB: BigInt!
-  ended: Boolean!
 }
 
-type AccountSnapshot @entity {
+type AccountSnapshotSY @entity {
   id: ID!
   lastUpdatedAt: BigInt!
-  lastImpliedHolding: String!
-  lastBalance: String!
-  lastCumulativeRate: String!
-  lastCummulativeRatePenPie: String!
-  lastCummulativeRateEQB: String!
+  lastBalance: BigInt!
+}
+
+type AccountSnapshotYT @entity {
+  id: ID!
+  lastUpdatedAt: BigInt!
+  lastImpliedHolding: BigInt!
+}
+
+type RerunSnapshot @entity {
+  id: ID!
+  updatedAt: BigInt!
+  ended: Boolean!
 }
 

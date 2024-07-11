@@ -7,34 +7,23 @@ import {
   POINT_SOURCE_YT,
 } from "../types.js";
 
-/**
- *
- * @param amountEzEthHolding amount of Ez Eth user holds during the period
- * @param holdingPeriod amount of time user holds the Ez Eth
- * @returns Zircuit point
- *
- * @dev to be reviewed by Zircuit team
- */
 function calcPointsFromHolding(
   amountEzEthHolding: bigint,
   holdingStartTimestamp: bigint,
   holdingEndTimestamp: bigint
 ): bigint {
-  const cuttoffTimestamp = 1719446400n; // 27/06 12:00 AM GMT
-
+  const cuttoffTimestamp = MISC_CONSTS.CUTOFF_TIME;
   if (holdingStartTimestamp >= cuttoffTimestamp) return BigInt(0);
   if (holdingEndTimestamp >= cuttoffTimestamp)
     holdingEndTimestamp = cuttoffTimestamp;
 
   const holdingPeriod = holdingEndTimestamp - holdingStartTimestamp;
-  // * ezETH exchangeRate
-  return (
-    (((amountEzEthHolding * MISC_CONSTS.EZETH_POINT_RATE) /
-      MISC_CONSTS.ONE_E18) *
-      holdingPeriod *
-      2n) /
-    3600n
-  );
+
+
+  return amountEzEthHolding * 
+    MISC_CONSTS.EZETH_POINT_RATE * 
+    holdingPeriod * MISC_CONSTS.PENDLE_DEFAULT_MULTIPLIER /
+    (MISC_CONSTS.ONE_E18 / 3600n);
 }
 
 export function updatePoints(
@@ -44,7 +33,7 @@ export function updatePoints(
   amountEzEthHolding: bigint,
   holdingStartTimestamp: bigint,
   holdingEndTimestamp: bigint,
-  updatedAt: number
+  updatedAt: bigint
 ) {
   const holdingPeriod = holdingEndTimestamp - holdingStartTimestamp;
 
@@ -94,7 +83,7 @@ function increasePoint(
   amountEzEthHolding: bigint,
   holdingPeriod: bigint,
   zPoint: bigint,
-  updatedAt: number
+  updatedAt: bigint
 ) {
   ctx.eventLogger.emit(EVENT_POINT_INCREASE, {
     label,
