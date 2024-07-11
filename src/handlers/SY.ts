@@ -109,7 +109,7 @@ export async function processSYAccounts(
 
     ctx.eventLogger.emit(EVENT_USER_SHARE, {
       label: POINT_SOURCE_SY,
-      address,
+      account: address,
       share: balance,
     });
 
