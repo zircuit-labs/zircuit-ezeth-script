@@ -105,7 +105,7 @@ export async function processSYAccounts(
 
     
     accountSnapshot.lastUpdatedAt = timestamp;
-    accountSnapshot.lastUpdatedAt = balance;
+    accountSnapshot.lastBalance = balance;
 
     ctx.eventLogger.emit(EVENT_USER_SHARE, {
       label: POINT_SOURCE_SY,
