@@ -20,6 +20,7 @@ export const PENDLE_POOL_ADDRESSES = {
   // using new pool contract
   LP: "0xEe6BdFAc6767eFEf0879B924feA12a3437d281A2",
   // the block which the new contract is deployed
+  SY_START_BLOCK: 19417104,
   START_BLOCK: 20158641,
   TREASURY: "0x8270400d528c34e1596ef367eedec99080a1b592",
   EQB_STAKING: "0xD64c8D303CE9d0B6dA9261Be55e408F26C15f0d8",
