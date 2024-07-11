@@ -49,7 +49,10 @@ export async function handleLPTransfer(
   ctx: PendleMarketContext
 ) {
   await updateLPtoSYRates(ctx);
-  await processAccounts(ctx, [evt.args.from, evt.args.to]);
+  await processAccounts(ctx, [
+    evt.args.from.toLowerCase(),
+    evt.args.to.toLowerCase()
+  ]);
 }
 
 export async function handleMarketRedeemReward(
@@ -83,6 +86,9 @@ export async function updateLPtoSYRates(ctx: EthContext) {
       id: STORAGE_KEY,
       lastUpdatedAt: timestamp,
       cummulativeRate: BigInt(0),
+      cummulativeRatePenPie: BigInt(0),
+      cummulativeRateEQB: BigInt(0),
+      ended: false,
     });
   }
 
@@ -145,53 +151,62 @@ export async function processAccounts(
       id: STORAGE_KEY,
       lastUpdatedAt: timestamp,
       cummulativeRate: BigInt(0),
+      cummulativeRatePenPie: BigInt(0),
+      cummulativeRateEQB: BigInt(0),
       ended: false,
     });
   }
   
-  const addressesToProcess: string[] = [];
+  const addressesSet: Set<string> = new Set<string>();
+
   // cuttoff time
   if (timestamp > MISC_CONSTS.CUTOFF_TIME) {
     timestamp = MISC_CONSTS.CUTOFF_TIME;
     if(!rateSnapshot.ended) {
       rateSnapshot.ended = true;
       const allAddresses = await getAllAddresses(ctx);
-      for (let address of allAddresses) {
-        address = address.toLowerCase();
-        if (
-          !addressesToProcess.includes(address) &&
-          !isLiquidLockerAddress(address)
-        ) {
-          addressesToProcess.push(address);
-        }
-      }
+      for (let address of allAddresses)
+        addressesSet.add(address);
       await ctx.store.upsert(rateSnapshot);
     }
   }
 
-  for (let address of addressesToAdd) {
-    address = address.toLowerCase();
-    if (
-      !addressesToProcess.includes(address) &&
-      !isLiquidLockerAddress(address)
-    ) {
-      addressesToProcess.push(address);
-    }
-  }
+  for (let address of addressesToAdd)
+    addressesSet.add(address);
 
-  const [usersShares, usersSharesPenPie, usersSharesEQB] = await Promise.all([
-    readAllUserActiveBalances(ctx, addressesToProcess),
-    readAllUserERC20Balances(
+  addressesSet.delete(MISC_CONSTS.ZERO_ADDRESS.toLowerCase());
+  addressesSet.delete(PENDLE_POOL_ADDRESSES.LIQUID_LOCKERS[0].address.toLowerCase());
+  addressesSet.delete(PENDLE_POOL_ADDRESSES.LIQUID_LOCKERS[1].address.toLowerCase());
+
+  const addressesToProcess: string[] = [...addressesSet];
+
+  let usersSharesPenPie: bigint[] = [];
+  let usersSharesEQB: bigint[] = [];
+
+  const usersShares =  await readAllUserActiveBalances(ctx, addressesToProcess)
+  try {
+    usersSharesPenPie = await readAllUserERC20Balances(
       ctx,
       addressesToProcess,
       PENDLE_POOL_ADDRESSES.LIQUID_LOCKERS[0].receiptToken
-    ),
-    readAllUserERC20Balances(
+    )
+  } catch(err) {
+    if (isSentioInternalError(err)) {
+      throw err;
+    } 
+  }
+
+  try {
+    usersSharesEQB = await readAllUserERC20Balances(
       ctx,
       addressesToProcess,
       PENDLE_POOL_ADDRESSES.LIQUID_LOCKERS[1].receiptToken
-    ),
-  ]);
+    )
+  } catch(err) {
+    if (isSentioInternalError(err)) {
+      throw err;
+    }
+  }
 
   const updateAccountPromises = [];
 
@@ -227,8 +242,8 @@ export async function processAccounts(
     accountSnapshot.lastCumulativeRate = rateSnapshot.cummulativeRate;
     accountSnapshot.lastCummulativeRateEQB = rateSnapshot.cummulativeRateEQB;
     accountSnapshot.lastCummulativeRatePenPie = rateSnapshot.cummulativeRatePenPie;
-    accountSnapshot.lastSharePenPie = usersSharesPenPie[i];
-    accountSnapshot.lastShareEQB = usersSharesEQB[i];
+    accountSnapshot.lastSharePenPie = usersSharesPenPie.length > 0 ? usersSharesPenPie[i] : BigInt(0);
+    accountSnapshot.lastShareEQB = usersSharesEQB.length > 0 ? usersSharesEQB[i] : BigInt(0);
 
     const accruedPoints =
       (cumulativeRateDiff * MISC_CONSTS.EZETH_POINT_RATE) /
@@ -266,7 +281,7 @@ async function increasePoint(
 
   ctx.eventLogger.emit(EVENT_POINT_INCREASE, {
     label,
-    account: account.toLowerCase(),
+    account: account,
     amountEzEthHolding: 0,
     holdingPeriod: timeDiff,
     zPoint: accruedPoints.scaleDown(18),
