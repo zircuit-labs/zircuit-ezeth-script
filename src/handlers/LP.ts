@@ -49,7 +49,7 @@ const RERUN_KEY = `RERUN:${POINT_SOURCE_LP}`;
  * 3. TODO: the rate for the Zircuit points (time)
  * and update the three different rates + timestamp to data store
  */
-export async function updateLPtoSYRates(ctx: EthContext) {
+export async function updateLPtoPointRates(ctx: EthContext) {
   let rateSnapshot = await ctx.store.get(RateSnapshotLP, RATE_KEY);
   let timestamp = BigInt(getUnixTimestamp(ctx.timestamp));
 
