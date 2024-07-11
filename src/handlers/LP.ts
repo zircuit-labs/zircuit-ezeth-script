@@ -246,7 +246,8 @@ export async function processLPAccounts(
         accountSnapshot,
         accruedPoints,
         timeDiff,
-        BigInt(timestamp)
+        timestamp,
+        cumulativeRateDiff
       )
     );
   }
@@ -262,18 +263,19 @@ async function increasePoint(
   accountSnapshot: AccountSnapshotLP,
   accruedPoints: bigint,
   timeDiff: bigint,
-  updatedAt: bigint
+  updatedAt: bigint,
+  cumulativeRateDiff: bigint,
 ) {
   ctx.eventLogger.emit(EVENT_USER_SHARE, {
     label,
-    account: account,
-    share: "0",
+    account,
+    share: cumulativeRateDiff,
   });
 
   ctx.eventLogger.emit(EVENT_POINT_INCREASE, {
     label,
     account: account,
-    amountEzEthHolding: 0,
+    amountEzEthHolding: cumulativeRateDiff,
     holdingPeriod: timeDiff,
     zPoint: accruedPoints.scaleDown(18),
     updatedAt,
