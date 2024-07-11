@@ -1,6 +1,6 @@
 import { PENDLE_POOL_ADDRESSES } from "./consts.ts";
 import { EthContext } from "@sentio/sdk/eth";
-import { AccountSnapshot } from "./schema/schema.ts"
+import { AccountSnapshot, AccountSnapshotLP } from "./schema/schema.ts"
 import os from 'os';
 
 export function isPendleAddress(addr: string) {
@@ -35,6 +35,13 @@ export function isSentioInternalError(err: any): boolean {
 }
 
 // returns all addresses in the storage
+export async function getAllLPAddresses(ctx : EthContext) {
+    // removes the suffix comprised of two letters coming from POINT_SOURCE
+    const addresses = (await ctx.store.list(AccountSnapshotLP))
+        .map((snapshot) => snapshot.id.toString().toLowerCase().slice(0, -2));
+    return [...new Set(addresses)];
+}
+
 export async function getAllAddresses(ctx : EthContext) {
     // removes the suffix comprised of two letters coming from POINT_SOURCE
     const addresses = (await ctx.store.list(AccountSnapshot))

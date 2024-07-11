@@ -17,6 +17,7 @@ import {
   isLiquidLockerAddress,
   isSentioInternalError,
   getAllAddresses,
+  getAllLPAddresses,
 } from "../helper.js";
 
 import {
@@ -132,7 +133,7 @@ export async function processLPAccounts(
     timestamp = MISC_CONSTS.CUTOFF_TIME;
     if(!rateSnapshot.ended) {
       rateSnapshot.ended = true;
-      const allAddresses = await getAllAddresses(ctx);
+      const allAddresses = await getAllLPAddresses(ctx);
       for (let address of allAddresses)
         addressesSet.add(address);
       await ctx.store.upsert(rateSnapshot);
