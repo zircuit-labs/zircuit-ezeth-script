@@ -51,7 +51,6 @@ export async function processYTAccounts(
 
   const addressesSet: Set<string> = new Set<string>();
 
-  // update this to every 24hrs
   if (timestamp > MISC_CONSTS.CUTOFF_TIME) {
     timestamp = MISC_CONSTS.CUTOFF_TIME;
     if(!rerunSnapshot.ended) {
