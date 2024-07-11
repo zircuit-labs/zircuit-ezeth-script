@@ -83,13 +83,13 @@ export async function updateLPtoSYRates(ctx: EthContext) {
     if (liquidLocker.name === "PenPie") {
       rateSnapshot.cummulativeRatePenPie +=
         (timestamp - rateSnapshot.lastUpdatedAt) * 
-        (liquidLockerActiveBal * state.totalSy) / 
+        (liquidLockerActiveBal * state.totalSy * 2n * MISC_CONSTS.EZETH_POINT_RATE) / 
         (liquidLockerBal * totalShare );
 
     } else if (liquidLocker.name === "EQB") {
       rateSnapshot.cummulativeRateEQB +=
         (timestamp - rateSnapshot.lastUpdatedAt) * 
-        (liquidLockerActiveBal * state.totalSy) / 
+        (liquidLockerActiveBal * state.totalSy * 2n * MISC_CONSTS.EZETH_POINT_RATE) / 
         (liquidLockerBal * totalShare );
     }
   }
@@ -98,7 +98,7 @@ export async function updateLPtoSYRates(ctx: EthContext) {
 
   const cummulativeRate =
     rateSnapshot.cummulativeRate +
-    ((timestamp - rateSnapshot?.lastUpdatedAt) * state.totalSy * 2n) /
+    ((timestamp - rateSnapshot?.lastUpdatedAt) * state.totalSy * 2n * MISC_CONSTS.EZETH_POINT_RATE) /
       totalShare;
 
   rateSnapshot.cummulativeRate = cummulativeRate;
@@ -107,7 +107,7 @@ export async function updateLPtoSYRates(ctx: EthContext) {
   await ctx.store.upsert(rateSnapshot);
 }
 
-export async function processAccounts(
+export async function processLPAccounts(
   ctx: EthContext,
   addressesToAdd: string[] = []
 ) {
@@ -214,7 +214,7 @@ export async function processAccounts(
     accountSnapshot.lastShareEQB = usersSharesEQB.length > 0 ? usersSharesEQB[i] : BigInt(0);
 
     const accruedPoints =
-      (cumulativeRateDiff * MISC_CONSTS.EZETH_POINT_RATE) /
+      cumulativeRateDiff /
       (MISC_CONSTS.ONE_E18 * 3600n);
 
     updateAccountPromises.push(
