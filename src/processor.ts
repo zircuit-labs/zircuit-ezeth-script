@@ -5,7 +5,7 @@ import { PendleMarketProcessor } from "./types/eth/pendlemarket.js";
 import { EQBBaseRewardProcessor } from "./types/eth/eqbbasereward.js";
 import { GLOBAL_CONFIG } from "@sentio/runtime";
 
-import { processLPAccounts, updateLPtoSYRates } from "./handlers/LP.js";
+import { processLPAccounts, updateLPtoPointRates } from "./handlers/LP.js";
 import { processSYAccounts } from "./handlers/SY.js";
 import { processYTAccounts } from "./handlers/YT.js";
 
@@ -21,19 +21,20 @@ PendleMarketProcessor.bind({
   network: CONFIG.BLOCKCHAIN,
 })
   .onEventTransfer(async (evt, ctx) => {
-    await updateLPtoSYRates(ctx);
+    await updateLPtoPointRates(ctx);
     await processLPAccounts(ctx, [
       evt.args.from.toLowerCase(),
       evt.args.to.toLowerCase(),
     ]);
   })
   .onEventRedeemRewards(async (evt, ctx) => {
-    await updateLPtoSYRates(ctx);
+    await updateLPtoPointRates(ctx);
   })
   .onEventSwap(async (evt, ctx) => {
-    await updateLPtoSYRates(ctx);
+    await updateLPtoPointRates(ctx);
   })
   .onTimeInterval(async (_, ctx) => {
+    await updateLPtoPointRates(ctx);
     await processLPAccounts(ctx);
   }, MISC_CONSTS.ONE_DAY_IN_MINUTE);
 
@@ -45,11 +46,11 @@ EQBBaseRewardProcessor.bind({
   network: CONFIG.BLOCKCHAIN,
 })
   .onEventStaked(async (evt, ctx) => {
-    await updateLPtoSYRates(ctx);
+    await updateLPtoPointRates(ctx);
     await processLPAccounts(ctx, [evt.args._user.toLowerCase()]);
   })
   .onEventWithdrawn(async (evt, ctx) => {
-    await updateLPtoSYRates(ctx);
+    await updateLPtoPointRates(ctx);
     await processLPAccounts(ctx, [evt.args._user.toLowerCase()]);
   });
 
@@ -60,7 +61,7 @@ ERC20Processor.bind({
   name: "Pendle Pie Receipt Token",
   network: CONFIG.BLOCKCHAIN,
 }).onEventTransfer(async (evt, ctx) => {
-  await updateLPtoSYRates(ctx);
+  await updateLPtoPointRates(ctx);
   await processLPAccounts(ctx, [
     evt.args.from.toLowerCase(),
     evt.args.to.toLowerCase(),

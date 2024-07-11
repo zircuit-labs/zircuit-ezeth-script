@@ -49,7 +49,7 @@ const RERUN_KEY = `RERUN:${POINT_SOURCE_LP}`;
  * 3. TODO: the rate for the Zircuit points (time)
  * and update the three different rates + timestamp to data store
  */
-export async function updateLPtoSYRates(ctx: EthContext) {
+export async function updateLPtoPointRates(ctx: EthContext) {
   let rateSnapshot = await ctx.store.get(RateSnapshotLP, RATE_KEY);
   let timestamp = BigInt(getUnixTimestamp(ctx.timestamp));
 
@@ -246,7 +246,8 @@ export async function processLPAccounts(
         accountSnapshot,
         accruedPoints,
         timeDiff,
-        BigInt(timestamp)
+        timestamp,
+        cumulativeRateDiff
       )
     );
   }
@@ -262,18 +263,19 @@ async function increasePoint(
   accountSnapshot: AccountSnapshotLP,
   accruedPoints: bigint,
   timeDiff: bigint,
-  updatedAt: bigint
+  updatedAt: bigint,
+  cumulativeRateDiff: bigint,
 ) {
   ctx.eventLogger.emit(EVENT_USER_SHARE, {
     label,
-    account: account,
-    share: "0",
+    account,
+    share: cumulativeRateDiff,
   });
 
   ctx.eventLogger.emit(EVENT_POINT_INCREASE, {
     label,
     account: account,
-    amountEzEthHolding: 0,
+    amountEzEthHolding: cumulativeRateDiff,
     holdingPeriod: timeDiff,
     zPoint: accruedPoints.scaleDown(18),
     updatedAt,

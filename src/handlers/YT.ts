@@ -107,7 +107,7 @@ export async function processYTAccounts(
 
     ctx.eventLogger.emit(EVENT_USER_SHARE, {
       label: POINT_SOURCE_YT,
-      address,
+      account: address,
       share: lastImpliedHolding,
     });
 
