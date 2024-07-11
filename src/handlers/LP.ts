@@ -35,38 +35,6 @@ import {
 const STORAGE_KEY = `RATES:${POINT_SOURCE_LP}`;
 
 /**
- * @dev 1 LP = (X PT + Y SY) where X and Y are defined by market conditions
- * So same as Balancer LPT, we need to update all positions on every swap
- *
- * Users can further deposit LP to liquid lockers to get back receipt tokens.
- * This should also be handled here.
- *
- * Currently for all liquid lockers, 1 receipt token = 1 LP
- */
-
-export async function handleLPTransfer(
-  evt: TransferEvent,
-  ctx: PendleMarketContext
-) {
-  await updateLPtoSYRates(ctx);
-  await processAccounts(ctx, [
-    evt.args.from.toLowerCase(),
-    evt.args.to.toLowerCase()
-  ]);
-}
-
-export async function handleMarketRedeemReward(
-  evt: RedeemRewardsEvent,
-  ctx: PendleMarketContext
-) {
-  await updateLPtoSYRates(ctx);
-}
-
-export async function handleMarketSwap(_: SwapEvent, ctx: PendleMarketContext) {
-  await updateLPtoSYRates(ctx);
-}
-
-/**
  * @dev This function calculates the cumulative rate to convert LP into equivilent SY
  * This function calculates three different rates:
  * 1. the rate for liquid lockers - penpie
