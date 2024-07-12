@@ -48,7 +48,7 @@ export async function processYTAccounts(
   }
 
   for (let address of addressesToAdd)
-    if (!allAddresses.includes(address) && isPendleOrZeroAddress(address)) {
+    if (!allAddresses.includes(address) && !isPendleOrZeroAddress(address)) {
       const accountId = address + POINT_SOURCE_YT;
       let accountSnapshot = await ctx.store.get(AccountSnapshotYT, accountId);
       if (!accountSnapshot)

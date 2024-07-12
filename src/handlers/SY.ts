@@ -47,7 +47,7 @@ export async function processSYAccounts(
   }
 
   for (let address of addressesToAdd)
-    if (!allAddresses.includes(address) && isPendleOrZeroAddress(address)) {
+    if (!allAddresses.includes(address) && !isPendleOrZeroAddress(address)) {
       const accountId = address + POINT_SOURCE_SY;
       let accountSnapshot = await ctx.store.get(AccountSnapshotSY, accountId);
       if (!accountSnapshot)

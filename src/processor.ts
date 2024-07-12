@@ -6,7 +6,7 @@ import { EQBBaseRewardProcessor } from "./types/eth/eqbbasereward.js";
 import { GLOBAL_CONFIG } from "@sentio/runtime";
 
 import { processLPAccounts, updateLPtoPointRates } from "./handlers/LP.js";
-// import { processSYAccounts } from "./handlers/SY.js";
+import { processSYAccounts } from "./handlers/SY.js";
 import { processYTAccounts } from "./handlers/YT.js";
 
 GLOBAL_CONFIG.execution = {
