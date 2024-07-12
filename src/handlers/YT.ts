@@ -81,12 +81,10 @@ export async function processYTAccounts(
     const lastImpliedHolding = accountSnapshot.lastImpliedHolding;
     const lastUpdatedAt = accountSnapshot.lastUpdatedAt;
 
-    if (interestData.lastPYIndex != 0n) {
-      const lastImpliedHolding =
+    if (interestData.lastPYIndex != 0n)
+      accountSnapshot.lastImpliedHolding = 
         (balance * MISC_CONSTS.ONE_E18) / interestData.lastPYIndex +
         interestData.accruedInterest;
-      accountSnapshot.lastImpliedHolding = lastImpliedHolding;
-    }
 
     accountSnapshot.lastUpdatedAt = timestamp;
 

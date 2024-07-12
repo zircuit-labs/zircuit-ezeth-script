@@ -132,7 +132,7 @@ function increasePoint(
 ) {
   ctx.eventLogger.emit(EVENT_POINT_INCREASE, {
     label,
-    account: account.toLowerCase(),
+    account,
     amountEzEthHolding: amountEzEthHolding.scaleDown(18),
     holdingPeriod,
     zPoint: zPoint.scaleDown(18),
