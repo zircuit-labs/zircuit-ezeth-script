@@ -19,12 +19,14 @@ export async function processYTAccounts(
 ) {
   let timestamp = BigInt(getUnixTimestamp(ctx.timestamp));
   let rerunSnapshot = await ctx.store.get(RerunSnapshot, RERUN_KEY);
-  if (!rerunSnapshot)
+  if (!rerunSnapshot) {
     rerunSnapshot = new RerunSnapshot({
       id: RERUN_KEY,
       ended: false,
       updatedAt: timestamp,
     });
+    await ctx.store.upsert(rerunSnapshot);
+  }
 
   if (rerunSnapshot.ended) return;
 
