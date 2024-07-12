@@ -13,73 +13,73 @@ GLOBAL_CONFIG.execution = {
   sequential: true,
 };
 
-// PendleMarketProcessor.bind({
-//   address: PENDLE_POOL_ADDRESSES.LP,
-//   startBlock: PENDLE_POOL_ADDRESSES.START_BLOCK,
-//   endBlock: PENDLE_POOL_ADDRESSES.END_BLOCK,
-//   name: "Pendle Pool LP",
-//   network: CONFIG.BLOCKCHAIN,
-// })
-//   .onEventTransfer(async (evt, ctx) => {
-//     await updateLPtoPointRates(ctx);
-//     await processLPAccounts(ctx, [
-//       evt.args.from.toLowerCase(),
-//       evt.args.to.toLowerCase(),
-//     ]);
-//   })
-//   .onEventRedeemRewards(async (evt, ctx) => {
-//     await updateLPtoPointRates(ctx);
-//   })
-//   .onEventSwap(async (evt, ctx) => {
-//     await updateLPtoPointRates(ctx);
-//   })
-//   .onTimeInterval(async (_, ctx) => {
-//     await updateLPtoPointRates(ctx);
-//     await processLPAccounts(ctx);
-//   }, MISC_CONSTS.ONE_DAY_IN_MINUTE);
+PendleMarketProcessor.bind({
+  address: PENDLE_POOL_ADDRESSES.LP,
+  startBlock: PENDLE_POOL_ADDRESSES.START_BLOCK,
+  endBlock: PENDLE_POOL_ADDRESSES.END_BLOCK,
+  name: "Pendle Pool LP",
+  network: CONFIG.BLOCKCHAIN,
+})
+  .onEventTransfer(async (evt, ctx) => {
+    await updateLPtoPointRates(ctx);
+    await processLPAccounts(ctx, [
+      evt.args.from.toLowerCase(),
+      evt.args.to.toLowerCase(),
+    ]);
+  })
+  .onEventRedeemRewards(async (evt, ctx) => {
+    await updateLPtoPointRates(ctx);
+  })
+  .onEventSwap(async (evt, ctx) => {
+    await updateLPtoPointRates(ctx);
+  })
+  .onTimeInterval(async (_, ctx) => {
+    await updateLPtoPointRates(ctx);
+    await processLPAccounts(ctx);
+  }, MISC_CONSTS.ONE_DAY_IN_MINUTE);
 
-// EQBBaseRewardProcessor.bind({
-//   address: PENDLE_POOL_ADDRESSES.EQB_STAKING,
-//   startBlock: PENDLE_POOL_ADDRESSES.START_BLOCK,
-//   endBlock: PENDLE_POOL_ADDRESSES.END_BLOCK,
-//   name: "Equilibria Base Reward",
-//   network: CONFIG.BLOCKCHAIN,
-// })
-//   .onEventStaked(async (evt, ctx) => {
-//     await updateLPtoPointRates(ctx);
-//     await processLPAccounts(ctx, [evt.args._user.toLowerCase()]);
-//   })
-//   .onEventWithdrawn(async (evt, ctx) => {
-//     await updateLPtoPointRates(ctx);
-//     await processLPAccounts(ctx, [evt.args._user.toLowerCase()]);
-//   });
+EQBBaseRewardProcessor.bind({
+  address: PENDLE_POOL_ADDRESSES.EQB_STAKING,
+  startBlock: PENDLE_POOL_ADDRESSES.START_BLOCK,
+  endBlock: PENDLE_POOL_ADDRESSES.END_BLOCK,
+  name: "Equilibria Base Reward",
+  network: CONFIG.BLOCKCHAIN,
+})
+  .onEventStaked(async (evt, ctx) => {
+    await updateLPtoPointRates(ctx);
+    await processLPAccounts(ctx, [evt.args._user.toLowerCase()]);
+  })
+  .onEventWithdrawn(async (evt, ctx) => {
+    await updateLPtoPointRates(ctx);
+    await processLPAccounts(ctx, [evt.args._user.toLowerCase()]);
+  });
 
-// ERC20Processor.bind({
-//   address: PENDLE_POOL_ADDRESSES.PENPIE_RECEIPT_TOKEN,
-//   startBlock: PENDLE_POOL_ADDRESSES.START_BLOCK,
-//   endBlock: PENDLE_POOL_ADDRESSES.END_BLOCK,
-//   name: "Pendle Pie Receipt Token",
-//   network: CONFIG.BLOCKCHAIN,
-// }).onEventTransfer(async (evt, ctx) => {
-//   await updateLPtoPointRates(ctx);
-//   await processLPAccounts(ctx, [
-//     evt.args.from.toLowerCase(),
-//     evt.args.to.toLowerCase(),
-//   ]);
-// });
+ERC20Processor.bind({
+  address: PENDLE_POOL_ADDRESSES.PENPIE_RECEIPT_TOKEN,
+  startBlock: PENDLE_POOL_ADDRESSES.START_BLOCK,
+  endBlock: PENDLE_POOL_ADDRESSES.END_BLOCK,
+  name: "Pendle Pie Receipt Token",
+  network: CONFIG.BLOCKCHAIN,
+}).onEventTransfer(async (evt, ctx) => {
+  await updateLPtoPointRates(ctx);
+  await processLPAccounts(ctx, [
+    evt.args.from.toLowerCase(),
+    evt.args.to.toLowerCase(),
+  ]);
+});
 
-// ERC20Processor.bind({
-//   address: PENDLE_POOL_ADDRESSES.SY,
-//   startBlock: PENDLE_POOL_ADDRESSES.START_BLOCK,
-//   endBlock: PENDLE_POOL_ADDRESSES.END_BLOCK,
-//   name: "Pendle Pool SY",
-//   network: CONFIG.BLOCKCHAIN,
-// }).onEventTransfer(async (evt, ctx) => {
-//   await processSYAccounts(ctx, [
-//     evt.args.from.toLowerCase(),
-//     evt.args.to.toLowerCase(),
-//   ]);
-// });
+ERC20Processor.bind({
+  address: PENDLE_POOL_ADDRESSES.SY,
+  startBlock: PENDLE_POOL_ADDRESSES.START_BLOCK,
+  endBlock: PENDLE_POOL_ADDRESSES.END_BLOCK,
+  name: "Pendle Pool SY",
+  network: CONFIG.BLOCKCHAIN,
+}).onEventTransfer(async (evt, ctx) => {
+  await processSYAccounts(ctx, [
+    evt.args.from.toLowerCase(),
+    evt.args.to.toLowerCase(),
+  ]);
+});
 
 PendleYieldTokenProcessor.bind({
   address: PENDLE_POOL_ADDRESSES.YT,
