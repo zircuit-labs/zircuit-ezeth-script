@@ -199,12 +199,12 @@ export async function processLPAccounts(
   const updateAccountPromises = [];
 
   for (let i = 0; i < addressesToProcess.length; i++) {
-    const accountId = addressesToProcess[i] + POINT_SOURCE_LP;
-    let accountSnapshot = await ctx.store.get(AccountSnapshotLP, accountId);
+    const address = addressesToProcess[i];
+    let accountSnapshot = await ctx.store.get(AccountSnapshotLP, address);
 
     if (!accountSnapshot)
       accountSnapshot = new AccountSnapshotLP({
-        id: accountId,
+        id: address,
         lastUpdatedAt: BigInt(0),
         lastShare: BigInt(0),
         lastCumulativeRate: BigInt(0),

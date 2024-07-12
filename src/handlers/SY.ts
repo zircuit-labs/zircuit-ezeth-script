@@ -48,11 +48,10 @@ export async function processSYAccounts(
 
   for (let address of addressesToAdd)
     if (!allAddresses.includes(address) && !isPendleOrZeroAddress(address)) {
-      const accountId = address + POINT_SOURCE_SY;
-      let accountSnapshot = await ctx.store.get(AccountSnapshotSY, accountId);
+      let accountSnapshot = await ctx.store.get(AccountSnapshotSY, address);
       if (!accountSnapshot)
         accountSnapshot = new AccountSnapshotSY({
-          id: accountId,
+          id: address,
           lastBalance: BigInt(0),
           lastUpdatedAt: timestamp,
         });
@@ -71,7 +70,6 @@ export async function processSYAccounts(
   for (let i = 0; i < allAddresses.length; i++) {
     const address = allAddresses[i];
     const balance = allSYBalances[i];
-    const accountId = address + POINT_SOURCE_SY;
     const accountSnapshot = snapshots[i];
 
     const lastUpdatedAt = accountSnapshot.lastUpdatedAt

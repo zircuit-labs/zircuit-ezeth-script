@@ -49,11 +49,10 @@ export async function processYTAccounts(
 
   for (let address of addressesToAdd)
     if (!allAddresses.includes(address) && !isPendleOrZeroAddress(address)) {
-      const accountId = address + POINT_SOURCE_YT;
-      let accountSnapshot = await ctx.store.get(AccountSnapshotYT, accountId);
+      let accountSnapshot = await ctx.store.get(AccountSnapshotYT, address);
       if (!accountSnapshot)
         accountSnapshot = new AccountSnapshotYT({
-          id: accountId,
+          id: address,
           lastImpliedHolding: BigInt(0),
           lastUpdatedAt: timestamp,
         });
