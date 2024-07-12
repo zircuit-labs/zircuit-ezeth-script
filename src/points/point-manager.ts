@@ -1,39 +1,66 @@
 import { LogLevel } from "@sentio/sdk";
 import { EthContext } from "@sentio/sdk/eth";
 import { MISC_CONSTS, PENDLE_POOL_ADDRESSES } from "../consts.js";
+import { AccountSnapshotYT, AccountSnapshotSY } from "../schema/schema.ts";
+
 import {
   EVENT_POINT_INCREASE,
   POINT_SOURCE,
   POINT_SOURCE_YT,
 } from "../types.js";
 
-function calcPointsFromHolding(
-  amountEzEthHolding: bigint,
-  holdingStartTimestamp: bigint,
-  holdingEndTimestamp: bigint
-): bigint {
-  const cuttoffTimestamp = MISC_CONSTS.CUTOFF_TIME;
-  if (holdingStartTimestamp >= cuttoffTimestamp) return BigInt(0);
-  if (holdingEndTimestamp >= cuttoffTimestamp)
-    holdingEndTimestamp = cuttoffTimestamp;
-
-  const holdingPeriod = holdingEndTimestamp - holdingStartTimestamp;
-
-
-  return amountEzEthHolding * 
-    MISC_CONSTS.EZETH_POINT_RATE * 
-    holdingPeriod * MISC_CONSTS.PENDLE_DEFAULT_MULTIPLIER /
-    (MISC_CONSTS.ONE_E18 / 3600n);
-}
-
-export function updatePoints(
+export async function updatePointsYT(
   ctx: EthContext,
   label: POINT_SOURCE,
   account: string,
   amountEzEthHolding: bigint,
   holdingStartTimestamp: bigint,
   holdingEndTimestamp: bigint,
-  updatedAt: bigint
+  updatedAt: bigint,
+  accountSnapshot: AccountSnapshotYT
+) {
+  await ctx.store.upsert(accountSnapshot);
+  updatePoints(
+    ctx,
+    label,
+    account,
+    amountEzEthHolding,
+    holdingStartTimestamp,
+    holdingEndTimestamp,
+    updatedAt
+  );
+}
+
+export async function updatePointsSY(
+  ctx: EthContext,
+  label: POINT_SOURCE,
+  account: string,
+  amountEzEthHolding: bigint,
+  holdingStartTimestamp: bigint,
+  holdingEndTimestamp: bigint,
+  updatedAt: bigint,
+  accountSnapshot: AccountSnapshotSY
+) {
+  await ctx.store.upsert(accountSnapshot);
+  updatePoints(
+    ctx,
+    label,
+    account,
+    amountEzEthHolding,
+    holdingStartTimestamp,
+    holdingEndTimestamp,
+    updatedAt
+  );
+}
+
+function updatePoints(
+  ctx: EthContext,
+  label: POINT_SOURCE,
+  account: string,
+  amountEzEthHolding: bigint,
+  holdingStartTimestamp: bigint,
+  holdingEndTimestamp: bigint,
+  updatedAt: bigint,
 ) {
   const holdingPeriod = holdingEndTimestamp - holdingStartTimestamp;
 
@@ -74,6 +101,24 @@ export function updatePoints(
       updatedAt
     );
   }
+}
+
+function calcPointsFromHolding(
+  amountEzEthHolding: bigint,
+  holdingStartTimestamp: bigint,
+  holdingEndTimestamp: bigint
+): bigint {
+  const cuttoffTimestamp = MISC_CONSTS.CUTOFF_TIME;
+  if (holdingStartTimestamp >= cuttoffTimestamp) return BigInt(0);
+  if (holdingEndTimestamp >= cuttoffTimestamp)
+    holdingEndTimestamp = cuttoffTimestamp;
+
+  const holdingPeriod = holdingEndTimestamp - holdingStartTimestamp;
+
+  return amountEzEthHolding * 
+    MISC_CONSTS.EZETH_POINT_RATE * 
+    holdingPeriod * MISC_CONSTS.PENDLE_DEFAULT_MULTIPLIER /
+    (MISC_CONSTS.ONE_E18 / 3600n);
 }
 
 function increasePoint(

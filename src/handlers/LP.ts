@@ -1,5 +1,4 @@
 
-import { updatePoints } from "../points/point-manager.js";
 import { MISC_CONSTS, PENDLE_POOL_ADDRESSES } from "../consts.js";
 import { EthContext } from "@sentio/sdk/eth";
 import { LogLevel } from "@sentio/sdk";
@@ -266,12 +265,6 @@ async function increasePoint(
   updatedAt: bigint,
   cumulativeRateDiff: bigint,
 ) {
-  ctx.eventLogger.emit(EVENT_USER_SHARE, {
-    label,
-    account,
-    share: cumulativeRateDiff,
-  });
-
   ctx.eventLogger.emit(EVENT_POINT_INCREASE, {
     label,
     account: account,

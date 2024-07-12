@@ -1,4 +1,4 @@
-import { PENDLE_POOL_ADDRESSES } from "./consts.ts";
+import { MISC_CONSTS, PENDLE_POOL_ADDRESSES } from "./consts.ts";
 import { EthContext } from "@sentio/sdk/eth";
 import os from 'os';
 
@@ -8,11 +8,11 @@ import {
     AccountSnapshotLP, 
 } from "./schema/schema.ts"
 
-export function isPendleAddress(addr: string) {
-    addr = addr.toLowerCase();
+export function isPendleOrZeroAddress(addr: string) {
     return addr == PENDLE_POOL_ADDRESSES.SY ||
         addr == PENDLE_POOL_ADDRESSES.YT ||
-        addr == PENDLE_POOL_ADDRESSES.LP;
+        addr == PENDLE_POOL_ADDRESSES.LP ||
+        addr == MISC_CONSTS.ZERO_ADDRESS;
 }
 
 // @TODO: to modify this when liquid lockers launch
@@ -45,6 +45,16 @@ export async function getAllLPAddresses(ctx : EthContext) {
     const addresses = (await ctx.store.list(AccountSnapshotLP))
         .map((snapshot) => snapshot.id.toString().toLowerCase().slice(0, -2));
     return [...new Set(addresses)];
+}
+
+export async function getAllYTSnapShots(ctx : EthContext) {
+    // removes the suffix comprised of two letters coming from POINT_SOURCE
+    const snapshots = await ctx.store.list(AccountSnapshotYT)
+    const addresses = snapshots.map((snapshot) => snapshot.id.toString().toLowerCase().slice(0, -2));
+    return {
+        snapshots,
+        addresses
+    }
 }
 
 export async function getAllYTAddresses(ctx : EthContext) {
