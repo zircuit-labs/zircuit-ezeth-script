@@ -118,7 +118,7 @@ function calcPointsFromHolding(
   return amountEzEthHolding * 
     MISC_CONSTS.EZETH_POINT_RATE * 
     holdingPeriod * MISC_CONSTS.PENDLE_DEFAULT_MULTIPLIER /
-    (MISC_CONSTS.ONE_E18 / 3600n);
+    (MISC_CONSTS.ONE_E18 * 3600n);
 }
 
 function increasePoint(
