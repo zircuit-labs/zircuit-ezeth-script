@@ -15,9 +15,8 @@ export function isPendleOrZeroAddress(addr: string) {
         addr == MISC_CONSTS.ZERO_ADDRESS;
 }
 
-// @TODO: to modify this when liquid lockers launch
-export function isLiquidLockerAddress(addr: string) {
-    addr = addr.toLowerCase();
+export function isLiquidLockerOrZeroAddress(addr: string) {
+    if(addr == MISC_CONSTS.ZERO_ADDRESS) return true;
     return PENDLE_POOL_ADDRESSES.LIQUID_LOCKERS.some((liquidLockerInfo) => liquidLockerInfo.address == addr);
 }
 
@@ -39,18 +38,19 @@ export function isSentioInternalError(err: any): boolean {
     return false;
 }
 
-// returns all addresses in the storage
-export async function getAllLPAddresses(ctx : EthContext) {
+export async function getAllLPSnapshots(ctx : EthContext) {
     // removes the suffix comprised of two letters coming from POINT_SOURCE
-    const addresses = (await ctx.store.list(AccountSnapshotLP))
-        .map((snapshot) => snapshot.id.toString().toLowerCase().slice(0, -2));
-    return [...new Set(addresses)];
+    const snapshots = await ctx.store.list(AccountSnapshotLP)
+    const addresses = snapshots.map((snapshot) => snapshot.id.toString());
+    return {
+        snapshots,
+        addresses
+    }
 }
-
 export async function getAllYTSnapshots(ctx : EthContext) {
     // removes the suffix comprised of two letters coming from POINT_SOURCE
     const snapshots = await ctx.store.list(AccountSnapshotYT)
-    const addresses = snapshots.map((snapshot) => snapshot.id.toString().toLowerCase().slice(0, -2));
+    const addresses = snapshots.map((snapshot) => snapshot.id.toString());
     return {
         snapshots,
         addresses
@@ -60,7 +60,7 @@ export async function getAllYTSnapshots(ctx : EthContext) {
 export async function getAllSYSnapshots(ctx : EthContext) {
     // removes the suffix comprised of two letters coming from POINT_SOURCE
     const snapshots = await ctx.store.list(AccountSnapshotSY)
-    const addresses = snapshots.map((snapshot) => snapshot.id.toString().toLowerCase().slice(0, -2));
+    const addresses = snapshots.map((snapshot) => snapshot.id.toString());
     return {
         snapshots,
         addresses

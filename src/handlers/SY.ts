@@ -59,6 +59,8 @@ export async function processSYAccounts(
       snapshots.push(accountSnapshot);
     }
 
+  if(allAddresses.length == 0) return;
+
   const allSYBalances = await readAllUserERC20Balances(
     ctx,
     allAddresses,

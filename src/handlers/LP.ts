@@ -19,9 +19,9 @@ import {
 
 import {
   getUnixTimestamp,
-  isLiquidLockerAddress,
+  isLiquidLockerOrZeroAddress,
   isSentioInternalError,
-  getAllLPAddresses,
+  getAllLPSnapshots,
 } from "../helper.js";
 
 import {
@@ -127,12 +127,14 @@ export async function processLPAccounts(
   let rerunSnapshot = await ctx.store.get(RerunSnapshot, RERUN_KEY);
   let rateSnapshot = await ctx.store.get(RateSnapshotLP, RATE_KEY);
 
-  if(!rerunSnapshot)
+  if(!rerunSnapshot) {
     rerunSnapshot = new RerunSnapshot({
       id: RERUN_KEY,
       ended: false,
       updatedAt: timestamp,
     })
+    await ctx.store.upsert(rerunSnapshot);
+  }
 
   if(rerunSnapshot.ended) return;
 
@@ -146,36 +148,55 @@ export async function processLPAccounts(
     });
   }
   
-  const addressesSet: Set<string> = new Set<string>();
+  let allAddresses: string[] = [];
+  let snapshots: AccountSnapshotLP[] = [];
 
-  // cuttoff time
+
   if (timestamp > MISC_CONSTS.CUTOFF_TIME) {
     timestamp = MISC_CONSTS.CUTOFF_TIME;
-    if(!rerunSnapshot.ended) {
+    if (!rerunSnapshot.ended) {
       rerunSnapshot.ended = true;
-      const allAddresses = await getAllLPAddresses(ctx);
-      for (let address of allAddresses)
-        addressesSet.add(address);
+      rerunSnapshot.updatedAt = timestamp;
+      ({ snapshots, addresses: allAddresses } = await getAllLPSnapshots(ctx));
+      await ctx.store.upsert(rerunSnapshot);
     }
   }
 
+  if (timestamp > rerunSnapshot.updatedAt + MISC_CONSTS.FULL_EXECUTION_INTERVAL) {
+    ({ snapshots, addresses: allAddresses } = await getAllLPSnapshots(ctx));
+    rerunSnapshot.updatedAt = timestamp;
+    await ctx.store.upsert(rerunSnapshot);
+  }
+
   for (let address of addressesToAdd)
-    addressesSet.add(address);
+    if (!allAddresses.includes(address) && !isLiquidLockerOrZeroAddress(address)) {
+      let accountSnapshot = await ctx.store.get(AccountSnapshotLP, address);
+      if (!accountSnapshot) 
+        accountSnapshot = new AccountSnapshotLP({
+          id: address,
+          lastUpdatedAt: BigInt(0),
+          lastShare: BigInt(0),
+          lastCumulativeRate: BigInt(0),
+          lastSharePenPie: BigInt(0),
+          lastCummulativeRatePenPie: BigInt(0),
+          lastShareEQB: BigInt(0),
+          lastCummulativeRateEQB: BigInt(0),
+        });
+      allAddresses.push(address);
+      snapshots.push(accountSnapshot);
+    }
 
-  addressesSet.delete(MISC_CONSTS.ZERO_ADDRESS.toLowerCase());
-  addressesSet.delete(PENDLE_POOL_ADDRESSES.LIQUID_LOCKERS[0].address.toLowerCase());
-  addressesSet.delete(PENDLE_POOL_ADDRESSES.LIQUID_LOCKERS[1].address.toLowerCase());
-
-  const addressesToProcess: string[] = [...addressesSet];
+  if(allAddresses.length == 0) return;
 
   let usersSharesPenPie: bigint[] = [];
   let usersSharesEQB: bigint[] = [];
 
-  const usersShares =  await readAllUserActiveBalances(ctx, addressesToProcess)
+  const usersShares =  await readAllUserActiveBalances(ctx, allAddresses)
+
   try {
     usersSharesPenPie = await readAllUserERC20Balances(
       ctx,
-      addressesToProcess,
+      allAddresses,
       PENDLE_POOL_ADDRESSES.LIQUID_LOCKERS[0].receiptToken
     )
   } catch(err) {
@@ -187,7 +208,7 @@ export async function processLPAccounts(
   try {
     usersSharesEQB = await readAllUserERC20Balances(
       ctx,
-      addressesToProcess,
+      allAddresses,
       PENDLE_POOL_ADDRESSES.LIQUID_LOCKERS[1].receiptToken
     )
   } catch(err) {
@@ -198,21 +219,9 @@ export async function processLPAccounts(
 
   const updateAccountPromises = [];
 
-  for (let i = 0; i < addressesToProcess.length; i++) {
-    const address = addressesToProcess[i];
-    let accountSnapshot = await ctx.store.get(AccountSnapshotLP, address);
-
-    if (!accountSnapshot)
-      accountSnapshot = new AccountSnapshotLP({
-        id: address,
-        lastUpdatedAt: BigInt(0),
-        lastShare: BigInt(0),
-        lastCumulativeRate: BigInt(0),
-        lastSharePenPie: BigInt(0),
-        lastCummulativeRatePenPie: BigInt(0),
-        lastShareEQB: BigInt(0),
-        lastCummulativeRateEQB: BigInt(0),
-      });
+  for (let i = 0; i < allAddresses.length; i++) {
+    const address = allAddresses[i];
+    let accountSnapshot = snapshots[i];
 
     // timestamp can be rateSnapshot.lastUpdatedAt since update rates has to always be called first
     const cumulativeRateDiff =
@@ -241,7 +250,7 @@ export async function processLPAccounts(
       increasePoint(
         ctx,
         POINT_SOURCE_LP,
-        addressesToProcess[i],
+        address,
         accountSnapshot,
         accruedPoints,
         timeDiff,
@@ -251,8 +260,6 @@ export async function processLPAccounts(
     );
   }
   await Promise.all(updateAccountPromises);
-  rerunSnapshot.updatedAt = timestamp;
-  await ctx.store.upsert(rerunSnapshot);
 }
 
 async function increasePoint(

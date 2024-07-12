@@ -60,6 +60,8 @@ export async function processYTAccounts(
       snapshots.push(accountSnapshot);
     }
 
+  if(allAddresses.length == 0) return;
+  
   const [allYTBalances, allYTPositions] = await Promise.all([
     readAllUserERC20Balances(
       ctx,
