@@ -7,7 +7,7 @@ import { readAllUserERC20Balances, readAllYTPositions } from "../multicall.js";
 
 import { 
   getUnixTimestamp,
-  getAllYTSnapShots,
+  getAllYTSnapshots,
   isPendleOrZeroAddress
 } from "../helper.js";
 
@@ -36,13 +36,15 @@ export async function processYTAccounts(
     if (!rerunSnapshot.ended) {
       rerunSnapshot.ended = true;
       rerunSnapshot.updatedAt = timestamp;
-      
+      ({ snapshots, addresses: allAddresses } = await getAllYTSnapshots(ctx));
+      await ctx.store.upsert(rerunSnapshot);
     }
   }
 
   if (timestamp > rerunSnapshot.updatedAt + MISC_CONSTS.FULL_EXECUTION_INTERVAL) {
-    ({ snapshots, addresses: allAddresses } = await getAllYTSnapShots(ctx));
+    ({ snapshots, addresses: allAddresses } = await getAllYTSnapshots(ctx));
     rerunSnapshot.updatedAt = timestamp;
+    await ctx.store.upsert(rerunSnapshot);
   }
 
   for (let address of addressesToAdd)
@@ -102,5 +104,4 @@ export async function processYTAccounts(
     );
   }
   await Promise.all(updateAccountPromises);
-  await ctx.store.upsert(rerunSnapshot);
 }

@@ -1,102 +1,97 @@
-// import { ERC20Context } from "@sentio/sdk/eth/builtin/erc20";
-// import { updatePoints } from "../points/point-manager.js";
-// import { readAllUserERC20Balances } from "../multicall.js";
+import { ERC20Context } from "@sentio/sdk/eth/builtin/erc20";
+import { updatePointsSY } from "../points/point-manager.js";
+import { readAllUserERC20Balances } from "../multicall.js";
 
-// import { EVENT_USER_SHARE, POINT_SOURCE_SY } from "../types.js";
+import { EVENT_USER_SHARE, POINT_SOURCE_SY } from "../types.js";
 
-// import {
-//   getUnixTimestamp,
-//   isPendleAddress,
-//   getAllSYAddresses,
-//   isPendleOrZeroAddress,
-// } from "../helper.js";
+import {
+  getUnixTimestamp,
+  getAllSYSnapshots,
+  isPendleOrZeroAddress,
+} from "../helper.js";
 
-// import { AccountSnapshotSY, RerunSnapshot } from "../schema/schema.ts";
+import { AccountSnapshotSY, RerunSnapshot } from "../schema/schema.ts";
+import { PENDLE_POOL_ADDRESSES, MISC_CONSTS } from "../consts.js";
+const RERUN_KEY = `RERUN:${POINT_SOURCE_SY}`;
 
-// import { PENDLE_POOL_ADDRESSES, MISC_CONSTS } from "../consts.js";
+/**
+ * @dev 1 SY EZETH = 1 EZETH
+ */
 
-// const RERUN_KEY = `RERUN:${POINT_SOURCE_SY}`;
+export async function processSYAccounts(
+  ctx: ERC20Context,
+  addressesToAdd: string[] = []
+) {
+  let timestamp = BigInt(getUnixTimestamp(ctx.timestamp));
+  let rerunSnapshot = await ctx.store.get(RerunSnapshot, RERUN_KEY);
+  if (!rerunSnapshot)
+    rerunSnapshot = new RerunSnapshot({
+      id: RERUN_KEY,
+      ended: false,
+      updatedAt: timestamp,
+    });
 
-// /**
-//  * @dev 1 SY EZETH = 1 EZETH
-//  */
+  if (rerunSnapshot.ended) return;
 
-// export async function processSYAccounts(
-//   ctx: ERC20Context,
-//   addressesToAdd: string[] = []
-// ) {
-//   let timestamp = BigInt(getUnixTimestamp(ctx.timestamp));
-//   let rerunSnapshot = await ctx.store.get(RerunSnapshot, RERUN_KEY);
-//   if (!rerunSnapshot)
-//     rerunSnapshot = new RerunSnapshot({
-//       id: RERUN_KEY,
-//       ended: false,
-//       updatedAt: timestamp,
-//     });
+  let allAddresses: string[] = [];
+  let snapshots: AccountSnapshotSY[] = [];
 
-//   if (rerunSnapshot.ended) return;
+  if (timestamp > MISC_CONSTS.CUTOFF_TIME) {
+    timestamp = MISC_CONSTS.CUTOFF_TIME;
+    if (!rerunSnapshot.ended) {
+      rerunSnapshot.ended = true;
+      rerunSnapshot.updatedAt = timestamp;
+      ({ snapshots, addresses: allAddresses } = await getAllSYSnapshots(ctx));
+      await ctx.store.upsert(rerunSnapshot);
+    }
+  }
 
-//   const addressesSet: Set<string> = new Set<string>();
+  for (let address of addressesToAdd)
+    if (!allAddresses.includes(address) && isPendleOrZeroAddress(address)) {
+      const accountId = address + POINT_SOURCE_SY;
+      let accountSnapshot = await ctx.store.get(AccountSnapshotSY, accountId);
+      if (!accountSnapshot)
+        accountSnapshot = new AccountSnapshotSY({
+          id: accountId,
+          lastBalance: BigInt(0),
+          lastUpdatedAt: timestamp,
+        });
+      allAddresses.push(address);
+      snapshots.push(accountSnapshot);
+    }
 
-//   if (timestamp > MISC_CONSTS.CUTOFF_TIME) {
-//     timestamp = MISC_CONSTS.CUTOFF_TIME;
-//     if (!rerunSnapshot.ended) {
-//       rerunSnapshot.ended = true;
-//       const previousAddresses = await getAllSYAddresses(ctx);
-//       for (let address of previousAddresses) addressesSet.add(address);
-//     }
-//   }
+  const allSYBalances = await readAllUserERC20Balances(
+    ctx,
+    allAddresses,
+    ctx.contract.address
+  );
 
-//   if (
-//     timestamp >
-//     rerunSnapshot.updatedAt + MISC_CONSTS.FULL_EXECUTION_INTERVAL
-//   ) {
-//     const previousAddresses = await getAllSYAddresses(ctx);
-//     for (let address of previousAddresses) addressesSet.add(address);
-//     rerunSnapshot.updatedAt = timestamp;
-//   }
+  const updateAccountPromises = [];
 
-//   for (let address of addressesToAdd) addressesSet.add(address);
+  for (let i = 0; i < allAddresses.length; i++) {
+    const address = allAddresses[i];
+    const balance = allSYBalances[i];
+    const accountId = address + POINT_SOURCE_SY;
+    const accountSnapshot = snapshots[i];
 
-//   addressesSet.delete(PENDLE_POOL_ADDRESSES.SY.toLowerCase());
-//   addressesSet.delete(PENDLE_POOL_ADDRESSES.YT.toLowerCase());
-//   addressesSet.delete(PENDLE_POOL_ADDRESSES.LP.toLowerCase());
+    const lastUpdatedAt = accountSnapshot.lastUpdatedAt
+    const lastBalance = accountSnapshot.lastBalance
 
-//   const addressesToProcess: string[] = [...addressesSet];
+    accountSnapshot.lastUpdatedAt = timestamp;
+    accountSnapshot.lastBalance = balance;
 
-//   const allSYBalances = await readAllUserERC20Balances(
-//     ctx,
-//     addressesToProcess,
-//     ctx.contract.address
-//   );
-
-//   for (let i = 0; i < addressesToProcess.length; i++) {
-//     const address = addressesToProcess[i];
-//     const balance = allSYBalances[i];
-//     const accountId = address + POINT_SOURCE_SY;
-//     let accountSnapshot = await ctx.store.get(AccountSnapshotSY, accountId);
-
-//     if (!accountSnapshot)
-//       accountSnapshot = new AccountSnapshotSY({
-//         id: accountId,
-//         lastBalance: BigInt(0),
-//         lastUpdatedAt: timestamp,
-//       });
-
-//     updatePoints(
-//       ctx,
-//       POINT_SOURCE_SY,
-//       address,
-//       accountSnapshot.lastBalance,
-//       accountSnapshot.lastUpdatedAt,
-//       timestamp,
-//       timestamp
-//     );
-
-//     accountSnapshot.lastUpdatedAt = timestamp;
-//     accountSnapshot.lastBalance = balance;
-
-//     await ctx.store.upsert(accountSnapshot);
-//   }
-//   await ctx.store.upsert(rerunSnapshot);
-// }
+    updateAccountPromises.push(
+      updatePointsSY(
+        ctx,
+        POINT_SOURCE_SY,
+        address,
+        lastBalance,
+        lastUpdatedAt,
+        timestamp,
+        timestamp,
+        accountSnapshot
+      )
+    );
+  }
+  await Promise.all(updateAccountPromises);
+}

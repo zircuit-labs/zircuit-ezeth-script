@@ -47,7 +47,7 @@ export async function getAllLPAddresses(ctx : EthContext) {
     return [...new Set(addresses)];
 }
 
-export async function getAllYTSnapShots(ctx : EthContext) {
+export async function getAllYTSnapshots(ctx : EthContext) {
     // removes the suffix comprised of two letters coming from POINT_SOURCE
     const snapshots = await ctx.store.list(AccountSnapshotYT)
     const addresses = snapshots.map((snapshot) => snapshot.id.toString().toLowerCase().slice(0, -2));
@@ -57,16 +57,12 @@ export async function getAllYTSnapShots(ctx : EthContext) {
     }
 }
 
-export async function getAllYTAddresses(ctx : EthContext) {
+export async function getAllSYSnapshots(ctx : EthContext) {
     // removes the suffix comprised of two letters coming from POINT_SOURCE
-    const addresses = (await ctx.store.list(AccountSnapshotYT))
-        .map((snapshot) => snapshot.id.toString().toLowerCase().slice(0, -2));
-    return [...new Set(addresses)];
-}
-
-export async function getAllSYAddresses(ctx : EthContext) {
-    // removes the suffix comprised of two letters coming from POINT_SOURCE
-    const addresses = (await ctx.store.list(AccountSnapshotSY))
-        .map((snapshot) => snapshot.id.toString().toLowerCase().slice(0, -2));
-    return [...new Set(addresses)];
+    const snapshots = await ctx.store.list(AccountSnapshotSY)
+    const addresses = snapshots.map((snapshot) => snapshot.id.toString().toLowerCase().slice(0, -2));
+    return {
+        snapshots,
+        addresses
+    }
 }
