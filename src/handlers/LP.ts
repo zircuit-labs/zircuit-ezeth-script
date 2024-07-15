@@ -1,4 +1,4 @@
-import { AccountSnapshot } from "../schema/schema.ts"
+import { AccountSnapshot } from "../schema/schema.ts";
 import {
   PendleMarketContext,
   RedeemRewardsEvent,
@@ -7,10 +7,18 @@ import {
   getPendleMarketContractOnContext,
 } from "../types/eth/pendlemarket.js";
 import { updatePoints } from "../points/point-manager.js";
-import { getUnixTimestamp, isLiquidLockerAddress, isSentioInternalError, getAllAddresses } from "../helper.js";
+import {
+  getUnixTimestamp,
+  isLiquidLockerAddress,
+  isSentioInternalError,
+  getAllAddresses,
+} from "../helper.js";
 import { PENDLE_POOL_ADDRESSES } from "../consts.js";
 import { EthContext } from "@sentio/sdk/eth";
-import { readAllUserActiveBalances, readAllUserERC20Balances } from "../multicall.js";
+import {
+  readAllUserActiveBalances,
+  readAllUserERC20Balances,
+} from "../multicall.js";
 import { EVENT_USER_SHARE, POINT_SOURCE_LP } from "../types.js";
 
 /**
@@ -52,9 +60,9 @@ export async function processAllLPAccounts(
   const allAddresses = await getAllAddresses(ctx);
 
   for (let address of addressesToAdd) {
-    address = address.toLowerCase()
+    address = address.toLowerCase();
     if (!allAddresses.includes(address) && !isLiquidLockerAddress(address)) {
-      allAddresses.push(address)
+      allAddresses.push(address);
     }
   }
   const marketContract = getPendleMarketContractOnContext(
@@ -114,7 +122,7 @@ async function updateAccount(
 ) {
   const accountId = account.toLowerCase() + POINT_SOURCE_LP;
   const snapshot = await ctx.store.get(AccountSnapshot, accountId);
-  const ts : bigint = BigInt(timestamp).valueOf();
+  const ts: bigint = BigInt(timestamp).valueOf();
 
   if (snapshot && snapshot.lastUpdatedAt < timestamp) {
     updatePoints(
@@ -122,7 +130,8 @@ async function updateAccount(
       POINT_SOURCE_LP,
       account,
       BigInt(snapshot.lastImpliedHolding),
-      BigInt(ts - snapshot.lastUpdatedAt.valueOf()),
+      BigInt(snapshot.lastUpdatedAt),
+      BigInt(timestamp),
       timestamp
     );
   }
@@ -130,7 +139,7 @@ async function updateAccount(
     id: accountId,
     lastUpdatedAt: ts,
     lastImpliedHolding: impliedSy.toString(),
-    lastBalance: snapshot ? snapshot.lastBalance.toString() : ""
+    lastBalance: snapshot ? snapshot.lastBalance.toString() : "",
   });
 
   ctx.eventLogger.emit(EVENT_USER_SHARE, {

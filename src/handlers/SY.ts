@@ -1,14 +1,17 @@
-import { AccountSnapshot } from "../schema/schema.ts"
+import { AccountSnapshot } from "../schema/schema.ts";
 import { TransferEvent } from "../types/eth/pendlemarket.js";
 import { ERC20Context } from "@sentio/sdk/eth/builtin/erc20";
-import { getUnixTimestamp, isPendleAddress, getAllAddresses } from "../helper.js";
+import {
+  getUnixTimestamp,
+  isPendleAddress,
+  getAllAddresses,
+} from "../helper.js";
 import { updatePoints } from "../points/point-manager.js";
 import { EVENT_USER_SHARE, POINT_SOURCE_SY } from "../types.js";
 
 /**
  * @dev 1 SY EZETH = 1 EZETH
  */
-
 
 export async function handleSYTransfer(evt: TransferEvent, ctx: ERC20Context) {
   await processAccount(evt.args.from, ctx);
@@ -23,7 +26,7 @@ export async function processAllAccounts(ctx: ERC20Context) {
 async function processAccount(account: string, ctx: ERC20Context) {
   if (isPendleAddress(account)) return;
   const timestamp = getUnixTimestamp(ctx.timestamp);
-  const ts : bigint = BigInt(timestamp).valueOf();
+  const ts: bigint = BigInt(timestamp).valueOf();
   const accountId = account.toLowerCase() + POINT_SOURCE_SY;
   const snapshot = await ctx.store.get(AccountSnapshot, accountId);
 
@@ -33,7 +36,8 @@ async function processAccount(account: string, ctx: ERC20Context) {
       POINT_SOURCE_SY,
       account,
       BigInt(snapshot.lastBalance),
-      BigInt(ts.valueOf() - snapshot.lastUpdatedAt.valueOf()),
+      BigInt(snapshot.lastUpdatedAt),
+      BigInt(timestamp),
       timestamp
     );
   }
@@ -51,7 +55,7 @@ async function processAccount(account: string, ctx: ERC20Context) {
     label: POINT_SOURCE_SY,
     account,
     share: newBalance,
-  })
+  });
 
   await ctx.store.upsert(newSnapshot);
 }

@@ -1,4 +1,4 @@
-import { AccountSnapshot } from "../schema/schema.ts"
+import { AccountSnapshot } from "../schema/schema.ts";
 import {
   PendleYieldTokenContext,
   RedeemInterestEvent,
@@ -6,7 +6,11 @@ import {
 } from "../types/eth/pendleyieldtoken.js";
 import { updatePoints } from "../points/point-manager.js";
 import { MISC_CONSTS } from "../consts.js";
-import { getUnixTimestamp, isPendleAddress, getAllAddresses } from "../helper.js";
+import {
+  getUnixTimestamp,
+  isPendleAddress,
+  getAllAddresses,
+} from "../helper.js";
 import { readAllUserERC20Balances, readAllYTPositions } from "../multicall.js";
 import { EVENT_USER_SHARE, POINT_SOURCE_YT } from "../types.js";
 
@@ -37,14 +41,11 @@ export async function processAllYTAccounts(
   addressesToAdd: string[] = [],
   shouldIncludeDb: boolean = true
 ) {
-
-  if ((await ctx.contract.isExpired())) {
+  if (await ctx.contract.isExpired()) {
     return;
   }
 
-  const allAddresses = shouldIncludeDb
-    ? (await getAllAddresses(ctx))
-    : [];
+  const allAddresses = shouldIncludeDb ? await getAllAddresses(ctx) : [];
   for (let address of addressesToAdd) {
     address = address.toLowerCase();
     if (!allAddresses.includes(address) && !isPendleAddress(address)) {
@@ -67,14 +68,15 @@ export async function processAllYTAccounts(
 
     const accountId = address.toLowerCase() + POINT_SOURCE_YT;
     const snapshot = await ctx.store.get(AccountSnapshot, accountId);
-    const ts : bigint = BigInt(timestamp).valueOf();
+    const ts: bigint = BigInt(timestamp).valueOf();
     if (snapshot && snapshot.lastUpdatedAt < ts) {
       updatePoints(
         ctx,
         POINT_SOURCE_YT,
         address,
         BigInt(snapshot.lastImpliedHolding),
-        BigInt(ts.valueOf() - snapshot.lastUpdatedAt.valueOf()),
+        BigInt(snapshot.lastUpdatedAt),
+        BigInt(timestamp),
         timestamp
       );
     }
@@ -89,7 +91,7 @@ export async function processAllYTAccounts(
       id: accountId,
       lastUpdatedAt: BigInt(timestamp),
       lastImpliedHolding: impliedHolding.toString(),
-      lastBalance: snapshot ? snapshot.lastBalance.toString() : ""
+      lastBalance: snapshot ? snapshot.lastBalance.toString() : "",
     });
 
     ctx.eventLogger.emit(EVENT_USER_SHARE, {
