@@ -26,7 +26,8 @@ import {
 function calcPointsFromHolding(
   amountEzEthHolding: bigint,
   holdingStartTimestamp: bigint,
-  holdingEndTimestamp: bigint
+  holdingEndTimestamp: bigint,
+  label: POINT_SOURCE
 ): bigint {
   const campaignStartTime = MULTIPLIERS.campaign.startTimestamp;
   const campaignEndTime = MULTIPLIERS.campaign.endTimestamp;
@@ -34,6 +35,17 @@ function calcPointsFromHolding(
   const baseMultiplier = MULTIPLIERS.multiplier;
   const baseFactor = MULTIPLIERS.baseFactor;
   const expiry = MULTIPLIERS.expiry;
+
+  if (label == POINT_SOURCE_SY) {
+    if (holdingEndTimestamp < V1_END_TIMESTAMP) {
+      return 0n;
+    }
+
+    holdingStartTimestamp =
+      holdingStartTimestamp < V1_END_TIMESTAMP
+        ? V1_END_TIMESTAMP
+        : holdingStartTimestamp;
+  }
 
   if (holdingStartTimestamp >= expiry) return BigInt(0);
   if (holdingEndTimestamp >= expiry) holdingEndTimestamp = expiry;
@@ -103,20 +115,11 @@ export function updatePoints(
   holdingEndTimestamp: bigint,
   updatedAt: number
 ) {
-  if (label == POINT_SOURCE_SY) {
-    if (holdingEndTimestamp <= V1_END_TIMESTAMP) {
-      return;
-    }
-
-    holdingStartTimestamp =
-      holdingStartTimestamp < V1_END_TIMESTAMP + 1n
-        ? V1_END_TIMESTAMP + 1n
-        : holdingStartTimestamp;
-  }
   const zPoint = calcPointsFromHolding(
     amountEzEthHolding,
     holdingStartTimestamp,
-    holdingEndTimestamp
+    holdingEndTimestamp,
+    label
   );
 
   if (label == POINT_SOURCE_YT) {
